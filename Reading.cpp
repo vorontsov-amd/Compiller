@@ -3,164 +3,292 @@
 
 node_t& GetGrammar(List<node_t>& programm)
 {    
-	node_t* root = GetOpSequence(programm);
-    node_t term = programm.ShowFront();
-    programm.PopFront();
-    if (term.Type() != NodeType::TERMINATED)
+	node_t* root = GetDefFunc(programm);
+
+    if (programm.ShowFront().Type() != NodeType::TERMINATED)
     {
-		fprintf(stderr, "THE TERMINATING CHARACTER WAS NOT RECEIVED ");
-        std::cout << "RECIVED" << programm.ShowFront();
+		fprintf(stderr, "THE TERMINATING CHARACTER WAS NOT RECEIVED. ");
+        std::cout << "RECIVED: \n" << programm.ShowFront() << "\n";
+		exit(EXIT_FAILURE);
     }
 
 	return *root;
 }
 
 
+node_t* GetDefFunc(List<node_t>& programm)
+{
+	CheckValidFunc(programm);
+	node_t func = programm.ShowFront();
+	programm.PopFront();
+	CheckOpRoundBr(programm);
+	
+	node_t* left = GetParamSequence(programm);
+	CheckClsRoundBr(programm);
+	CheckOpShapeBr(programm);
+	node_t* right = GetOpSequence(programm);
+	CheckClsShapeBr(programm);
+
+	node_t* function = new node_t(NodeType::WORD, DataType::FUNC, func.value().string_ptr, left, right);
+	return new node_t(NodeType::WORD, DataType::DEFINE, "define", nullptr, function);
+}
+
+void CheckValidFunc(List<node_t>& programm)
+{
+	if (programm.ShowFront().Type() != NodeType::WORD || strcmp(programm.ShowFront().value().string_ptr, "define") != 0)
+	{
+		fprintf(stderr, "Functions not found\n");
+		exit(EXIT_FAILURE);
+	}
+	programm.PopFront();
+	CheckWord(programm);
+}
+
+
 node_t* GetOpSequence(List<node_t>& programm)
 {    
 	node_t* first_op = GetOperator(programm);
-	//std::cout << "first op " << *first_op << "\n";
-
-    while (programm.ShowFront().Type() == NodeType::END_OP)
+    while (programm.ShowFront().dType() == DataType::END_OP)
     {
 		programm.PopFront();
-			//puts("get op sec 3");
 
-		if (programm.ShowFront().Type() != NodeType::TERMINATED && programm.ShowFront().Type() != NodeType::BRACKET)
-		{
-			node_t* second_op = GetOperator(programm);
-			//std::cout << "second op " << *first_op << "\n";
-
-		    //puts("get op sec 4");
-
-        	first_op = new node_t(NodeType::OPERATOR, DataType::END_OP, ";", first_op, second_op);
-		}
-		else
-		{
-			//puts("get op sec 5");
-			first_op = new node_t(NodeType::OPERATOR, DataType::END_OP, ";", first_op, nullptr);
-		}
+		node_t* second_op = GetOperator(programm);
+        first_op = new node_t(NodeType::OPERATOR, DataType::END_OP, ";", first_op, second_op);
     }
     return first_op;
 }
 
 node_t* GetOperator(List<node_t>& programm)
 {
-    // if (programm.ShowFront().Type() != NodeType::WORD)
-    // {
-    //     fprintf(stderr, "EXPECTED OPERATOR. RECIVED: ");
-    //     std::cout << programm.ShowFront();
-    // }
 	if (programm.ShowFront().Type() == NodeType::WORD)
 	{
 		if(strcmp(programm.ShowFront().value().string_ptr, "while") == 0)
 		{
-			programm.ShowFront().SetDtype(DataType::WHILE);
-			//std::cout << "сюда дощёл это " << programm.ShowFront() << "\n";
 			node_t* op = GetIfWhile(programm);
 			op->SetDtype(DataType::WHILE);
 			return op;
 		}	
 		else if(strcmp(programm.ShowFront().value().string_ptr, "if") == 0)
 		{
-			programm.ShowFront().SetDtype(DataType::WHILE);
-			//std::cout << "сюда дощёл это " << programm.ShowFront() << "\n";
 			node_t* op = GetIfWhile(programm);
 			op->SetDtype(DataType::IF);
 			return op;
 		}	
+		else if(strcmp(programm.ShowFront().value().string_ptr, "var") == 0)
+		{
+			return GetInit(programm);
+		}
 		else 
 		{
-			node_t* lValue = GetVar(programm);
-			//std::cout << "lvalue " << *lValue << "\n";
-
-			if (programm.ShowFront().dType() == DataType::MOV)
-			{
-				programm.PopFront();
-
-				node_t* rValue = GetExpression(programm);
-				//std::cout << "rvalue " << *rValue << "\n"; 
-
-				return new node_t(NodeType::OPERATOR, DataType::MOV, "=", lValue, rValue);
-			}
-			else
-			{
-				//std::cout << programm.ShowFront();
-			}
+			return GetCallFunc(programm);
 		}
 	}
+	return nullptr;
+}
+
+
+node_t* GetRetFunc(List<node_t>& programm)
+{
+	node_t func = programm.ShowFront();
+	programm.PopFront();
+	if (programm.ShowFront().dType() == DataType::OP_ROUND_BR)
+	{
+		return GetFunc(programm, func);
+	}
+	else 
+	{
+		programm.PushFront(func);
+		return GetVar(programm);
+	}
+}
+
+
+node_t* GetCallFunc(List<node_t>& programm)
+{
+	node_t func = programm.ShowFront();
+	programm.PopFront();
+	if (programm.ShowFront().dType() == DataType::OP_ROUND_BR)
+	{
+		return GetFunc(programm, func);
+	}
+	else 
+	{
+		programm.PushFront(func);
+		return GetAssign(programm);
+	}
+}
+
+
+node_t* GetFunc(List<node_t>& programm, node_t& func)
+{
+	programm.PopFront();
+	node_t* first_parametr = GetParamSequence(programm);
+	CheckClsRoundBr(programm);
+	char* funcname = Funcname(func);
+	return new node_t(NodeType::WORD, DataType::FUNC, funcname, nullptr, first_parametr);
+}
+
+node_t* GetParamSequence(List<node_t>& programm)
+{
+	node_t* first_parametr = GetVar(programm);
+	while (programm.ShowFront().dType() == DataType::COMMA)
+	{
+		programm.PopFront();
+		node_t* second_parametr = GetVar(programm);
+		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
+	}
+	return first_parametr;
+}
+
+
+
+char* Funcname(node_t& func)
+{
+	char* funcname = new char[strlen(func.value().string_ptr) + 3];
+	strcpy(funcname, func.value().string_ptr);
+	strcat(funcname, "()");
+	return funcname;
+}
+
+node_t* GetInit(List<node_t>& programm)
+{
+	programm.PopFront();
+	CheckWord(programm);
+
+	node_t* lValue = GetVar(programm);
+	if (programm.ShowFront().dType() == DataType::MOV)
+	{
+		programm.PopFront();
+		node_t* rValue = GetExpression(programm);
+		node_t* expression =  new node_t(NodeType::OPERATOR, DataType::MOV, "=", lValue, rValue);
+		return new node_t(NodeType::WORD, DataType::INITIALIZATE, "var", nullptr, expression);
+	}
+	else
+	{
+		return new node_t(NodeType::WORD, DataType::INITIALIZATE, "var", nullptr, lValue);
+	}
+
+}
+
+void CheckWord(List<node_t>& programm)
+{
+	if (programm.ShowFront().Type() != NodeType::WORD && programm.ShowFront().Type() != NodeType::WORD_WITH_NUMBERS)
+	{
+		fprintf(stderr, "The variable or function name must be a word or a word with numbers\n");
+		exit(EXIT_FAILURE);
+	}
+}
+
+
+node_t* GetAssign(List<node_t>& programm)
+{
+	node_t* lValue = GetVar(programm);
+	if (programm.ShowFront().dType() == DataType::MOV)
+	{
+		programm.PopFront();
+		node_t* rValue = GetExpression(programm);
+		return new node_t(NodeType::OPERATOR, DataType::MOV, "=", lValue, rValue);
+	}
+	else
+	{
+		fprintf(stderr, "Unknown operator: %s\n", programm.ShowFront().value().string_ptr);
+		exit(EXIT_FAILURE);
+	}
+}
+
+
+void CheckOpRoundBr(List<node_t>& programm)
+{
+	if (programm.ShowFront().dType() != DataType::OP_ROUND_BR)
+	{
+		fprintf(stderr, "Missing opening bracket '('\n");
+		exit(EXIT_FAILURE);
+	}
+	else programm.PopFront();
+}
+
+void CheckClsRoundBr(List<node_t>& programm)
+{
+	if (programm.ShowFront().dType() != DataType::CLS_ROUND_BR)
+	{
+		fprintf(stderr, "Missing closing bracket ')'\n");
+		exit(EXIT_FAILURE);
+	}
+	else programm.PopFront();
+}
+
+void CheckOpShapeBr(List<node_t>& programm)
+{
+	if (programm.ShowFront().dType() != DataType::OP_SHAPE_BR)
+	{
+		fprintf(stderr, "Missing opening bracket '{'\n");
+		exit(EXIT_FAILURE);
+	}
+	else programm.PopFront();
+}
+
+void CheckClsShapeBr(List<node_t>& programm)
+{
+	if (programm.ShowFront().dType() != DataType::CLS_SHAPE_BR)
+	{
+		fprintf(stderr, "Missing closing bracket '}'\n");
+		exit(EXIT_FAILURE);
+	}
+	else programm.PopFront();
 }
 
 
 node_t* GetIfWhile(List<node_t>& programm)
 {
 	programm.PopFront();
-	if (programm.ShowFront().dType() != DataType::OP_ROUND_BR)
-	{
-		//puts("пиздец скобка отъехала");
-		//std::cout << "это " << programm.ShowFront();
-	}
-	else
-	{
-		programm.PopFront();
-		node_t* left_op = GetExpression(programm);
-		//std::cout << "left" << *left_op << "\n";
-		node_t op = programm.ShowFront();
-		programm.PopFront();
-		node_t* right_op = GetExpression(programm);
-		//std::cout << "right" << *right_op << "\n";
-		node_t* expression = nullptr;
-		switch (op.dType())
-		{
-		case DataType::JE:
-			expression = new node_t(NodeType::OPERATOR, DataType::JE, "==", left_op, right_op);
-			break;
-		case DataType::JA:
-			expression = new node_t(NodeType::OPERATOR, DataType::JA, ">", left_op, right_op);
-			break;
-		case DataType::JB:
-			expression = new node_t(NodeType::OPERATOR, DataType::JB, "<", left_op, right_op);
-			break;
-		case DataType::JAE:
-			expression = new node_t(NodeType::OPERATOR, DataType::JBE, "<=", left_op, right_op);
-			break;
-		case DataType::JBE:
-			expression = new node_t(NodeType::OPERATOR, DataType::JAE, ">=", left_op, right_op);
-			break;
-		case DataType::JNE:
-			expression = new node_t(NodeType::OPERATOR, DataType::JNE, "!=", left_op, right_op);
-			break;
-		}
-		//std::cout << "expr" << *expression << "\n";
-		if (programm.ShowFront().dType() != DataType::CLS_ROUND_BR)
-		{
-			puts("нету скобки бляяяя");
-		}
-		else 
-		{
-			programm.PopFront();
-			if (programm.ShowFront().dType() == DataType::OP_SHAPE_BR)
-			{
-				programm.PopFront();
-				//std::cout << "я здесь " << programm.ShowFront() << "\n";
-				node_t* oper = GetOpSequence(programm);
-				if (programm.ShowFront().dType() == DataType::CLS_SHAPE_BR)
-				{
-					programm.PopFront();
-				}
-				return new node_t(NodeType::OPERATOR, expression, oper);
-			} 
-			else 
-			{
-				//std::cout << "wtf " << programm.ShowFront() << "\n";
-			}
-		}
-		
-	}
+
+	CheckOpRoundBr(programm);
+	node_t* conditions = GetConditions(programm);
+	CheckClsRoundBr(programm);
+
+	CheckOpShapeBr(programm);
+	node_t* oper = GetOpSequence(programm);
+	CheckClsShapeBr(programm);
+	return new node_t(NodeType::OPERATOR, conditions, oper);
 }
 
 
-node_t* GetT(List<node_t>& programm)
+node_t* GetConditions(List<node_t>& programm)
+{
+	node_t* left_op = GetExpression(programm);
+
+	node_t op = programm.ShowFront();
+	programm.PopFront();
+
+	node_t* right_op = GetExpression(programm);
+
+	node_t* expression = nullptr;
+	switch (op.dType())
+	{
+	case DataType::JE:
+		expression = new node_t(NodeType::OPERATOR, DataType::JE, "==", left_op, right_op);
+		break;
+	case DataType::JA:
+		expression = new node_t(NodeType::OPERATOR, DataType::JA, ">", left_op, right_op);
+		break;
+	case DataType::JB:
+		expression = new node_t(NodeType::OPERATOR, DataType::JB, "<", left_op, right_op);
+		break;
+	case DataType::JAE:
+		expression = new node_t(NodeType::OPERATOR, DataType::JBE, "<=", left_op, right_op);
+		break;
+	case DataType::JBE:
+		expression = new node_t(NodeType::OPERATOR, DataType::JAE, ">=", left_op, right_op);
+		break;
+	case DataType::JNE:
+		expression = new node_t(NodeType::OPERATOR, DataType::JNE, "!=", left_op, right_op);
+		break;
+	}
+	return expression;
+}
+
+
+node_t* GetTerm(List<node_t>& programm)
 {
 	node_t* val = GetPower(programm);
 
@@ -196,24 +324,20 @@ node_t* GetPower(List<node_t>& programm)
 
 node_t* GetExpression(List<node_t>& programm)
 {
-	//puts("get expr 1");
-	node_t* val = GetT(programm);
-	//puts("get expr 2");
+	node_t* val = GetTerm(programm);
 
 	while (programm.ShowFront().dType() == DataType::ADD || programm.ShowFront().dType() == DataType::SUB)
 	{
 		node_t op = programm.ShowFront();
 		programm.PopFront();
-	//	puts("get expr 3");
-		node_t* val2 = GetT(programm);
-	//	puts("get expr 4");
+		node_t* val2 = GetTerm(programm);
 		if (op.dType() == DataType::ADD)
 		{
 			val = new node_t(NodeType::OPERATOR, DataType::ADD, "+", val, val2);
 		}
 		else
 		{
-			if (val->value().number == 0 && val->Type() == NodeType::NUMBER)
+			if (val->Type() == NodeType::NUMBER && val->dType() == DataType::UNKNOWN)
 			{
 				val = new node_t(NodeType::OPERATOR, DataType::SUB, "-", nullptr, val2);
 			}
@@ -222,7 +346,6 @@ node_t* GetExpression(List<node_t>& programm)
 				val = new node_t(NodeType::OPERATOR, DataType::SUB, "-", val, val2);
 			}
 		}
-		//puts("get expr 5");
 	}
 	return val;
 }
@@ -234,33 +357,15 @@ node_t* GetPrimaryExpression(List<node_t>& programm)
 	{
 		programm.PopFront();
 		node_t* val = GetExpression(programm);
-		if (programm.ShowFront().dType() == DataType::CLS_ROUND_BR) puts("SYNTAX ERROR");
-		programm.PopFront();
+		CheckClsRoundBr(programm);
 		return val;
 	}
-	else return GetVar(programm);
+	else return GetRetFunc(programm);
 }
-
-// node_t* GetF()
-// {	
-// 	type_t oper = TYPE_unknown;
-// 	ReadFunc(&oper);
-
-// 	if (oper != TYPE_unknown)
-// 	{
-// 		node_t* val = GetP();
-// 		data_t func(oper);
-// 		return new node_t(func, nullptr, val);
-// 	}
-// 	else return GetV();
-// }
-
 
 node_t* GetVar(List<node_t>& programm)
 {
-    //puts("get var 0");
 	node_t var = programm.ShowFront();
-    //puts("get var 1");
 	if (programm.ShowFront().Type() != NodeType::WORD || programm.ShowFront().Type() != NodeType::WORD_WITH_NUMBERS)
     {
 		node_t var = programm.ShowFront();
@@ -269,7 +374,6 @@ node_t* GetVar(List<node_t>& programm)
     }
     else
 	{ 
-		//puts("get var 2");  
 		return GetNumber(programm);
 	}
 
@@ -281,90 +385,8 @@ node_t* GetNumber(List<node_t>& programm)
     if (programm.ShowFront().Type() == NodeType::NUMBER)
     {
 		node_t number = programm.ShowFront();
-		//std::cout << number; 
         programm.PopFront();
         return new node_t(number);
     }
+	return new node_t(NodeType::NUMBER, DataType::UNKNOWN);
 }
-
-
-// int ReadVar(char* c)
-// {
-// 	if ('a' <= s[p] && s[p] <= 'z')
-// 	{
-// 		*c = s[p];
-// 		p++;
-// 	}
-// 	return 0;
-// }
-
-
-// int StrEqual(const char* l, const char* r)
-// {
-// 	if (l == nullptr || r == nullptr) return 0;
-
-// 	for (int i = 0; l[i] != '\0' && r[i] != '\0'; i++)
-// 		if (l[i] != r[i]) return 0;
-
-// 	return 1;
-// }
-
-
-// int ReadFunc(type_t* n)
-// {
-// 	const char* str = &s[p];
-
-
-//     if (StrEqual(str, "sin"))
-//     {
-// 		p += 3;
-// 		*n = TYPE_sin;
-//     }
-//     else if (StrEqual(str, "cos"))
-// 	{
-// 		p += 3;
-// 		*n = TYPE_cos;
-// 	}
-// 	else if (StrEqual(str, "tg"))
-// 	{
-// 		p += 2;
-// 		*n = TYPE_tan;
-// 	}
-// 	else if (StrEqual(str, "ctg"))
-// 	{
-// 		p += 3;
-// 		*n = TYPE_cot;
-// 	}
-// 	else if (StrEqual(str, "lg"))
-// 	{
-// 		p += 2;
-// 		*n = TYPE_lg;
-// 	}
-// 	else if (StrEqual(str, "sh"))
-// 	{
-// 		p += 2;
-// 		*n = TYPE_sinh;
-// 	}
-// 	else if (StrEqual(str, "ch"))
-// 	{
-// 		p += 2;
-// 		*n = TYPE_cosh;
-// 	}
-// 	else if (StrEqual(str, "th"))
-// 	{
-// 		p += 2;
-// 		*n = TYPE_tanh;
-// 	}
-// 	else if (StrEqual(str, "cth"))
-// 	{
-// 		p += 3;
-// 		*n = TYPE_coth;
-// 	}
-// 	else
-// 	{
-// 		*n = TYPE_unknown;
-// 		return -1;
-// 	}
-//     return 0;
-// }
-

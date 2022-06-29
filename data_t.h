@@ -19,8 +19,6 @@ namespace DataType
 {
 	enum dataType
 	{
-		CONSTANT,
-		VARIABLE,
 		ADD = '+',
 		SUB = '-',
 		MUL = '*',
@@ -32,10 +30,11 @@ namespace DataType
 		CLS_SQUARE_BR = ']',
 		OP_SHAPE_BR = '{',
 		CLS_SHAPE_BR = '}',
+		COMMA = ',',
 		MOV = '=',
-		JE,
-		JA,
-		JB,
+		JA = '>',
+		JB = '<',
+		JE = 256,
 		JBE,
 		JAE,
 		JNE,
@@ -43,6 +42,11 @@ namespace DataType
 		IF,
 		END_OP,
 		UNKNOWN,
+		INITIALIZATE,
+		CONSTANT,
+		VARIABLE,
+		FUNC,
+		DEFINE,
 	};
 }
 
@@ -146,6 +150,7 @@ public:
 	node_t(node_t* node);
 	node_t(const data_t& _data, node_t* _left, node_t* _right);
 	node_t(const NodeType::nodeType _type, node_t* _left, node_t* _right);
+	node_t(const NodeType::nodeType N_type, const DataType::dataType D_type);
 	node_t(const NodeType::nodeType N_type, const DataType::dataType D_type, double number);
 	node_t(const NodeType::nodeType N_type, const DataType::dataType D_type, const char* str);
 	node_t(const NodeType::nodeType N_type, const DataType::dataType D_type, const char* str, node_t* _left, node_t* _right);

@@ -274,10 +274,10 @@ template <typename T> void		 List<T>::GraphDump			(const char * const graphname)
 	size_t index = 0;
 	while (index != capacity)
 	{
-		dumpfile << "Node" << index << "[shape = record, label = \" <index" << index << "> index " << index;
+		dumpfile << "Node" << index << "[shape=record, label =\" <index" << index << "> index " << index;
 		dumpfile << " | { Prev " << Prev[index];
-		dumpfile << "  | \""   << Data[index];
-		dumpfile << "\" | <next"   << index << "> Next " << Next[index] << " } \" ];\n";
+		dumpfile << "  | "   << Data[index];
+		dumpfile << " | <next"   << index << "> Next " << Next[index] << " } \" ];\n";
 #if DUMP == LINEAR
 		if (index + 1 != capacity)
 			dumpfile << "Node" << index << "->Node" << index + 1 << ";\n";

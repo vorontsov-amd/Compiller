@@ -6,75 +6,116 @@ List<node_t> AnalysProcessing (char* programm, long long length)
 
     List<node_t> lexems;
 
-    //puts(programm);
-
     char* word_ptr = new char[length];
     for (int str_len = 0; (str_len = sscanf(programm, "%s",word_ptr)) != -1; programm += (strlen(word_ptr) + 1))
     {
-        if (isNumber(word_ptr))
-        {
-            node_t number(NodeType::NUMBER, DataType::CONSTANT, (double)atoi(word_ptr)); 
-            lexems.PushBack(number);
-        }
-        else if (isWord(word_ptr))
-        {
-            node_t word(NodeType::WORD, DataType::UNKNOWN, word_ptr);
-            lexems.PushBack(word);
-        }
-        else if (isSemicolon(word_ptr))
-        {
-            node_t semicolon(NodeType::END_OP, DataType::END_OP, word_ptr);
-            lexems.PushBack(semicolon);
-        }
-        else if (symbol* op = isOperator(word_ptr))
-        {
-            node_t oper(NodeType::OPERATOR, op->type, op->ch);
-            lexems.PushBack(oper);
-        }
-        else if (symbol* br = isBracket(word_ptr))
-        {
-            node_t bracket(NodeType::BRACKET, br->type, br->ch);
-            lexems.PushBack(bracket);
-        }
-        else 
-        {
-            if (char* ch = strchr(word_ptr, ';'))
-            {
-                if (*(ch + 1) == '\0')
-                {
-                    *ch = '\0';
-                    if (isNumber(word_ptr))
-                    {
-                        node_t number(NodeType::NUMBER, DataType::CONSTANT, (double)atoi(word_ptr)); 
-                        lexems.PushBack(number);
-
-                        *ch = ';';
-                        node_t semicolon(NodeType::END_OP, DataType::END_OP, ";");
-                        lexems.PushBack(semicolon);
-                    }
-                    else
-                    {
-                        node_t word_with_number(NodeType::WORD_WITH_NUMBERS, DataType::UNKNOWN, word_ptr);
-                        lexems.PushBack(word_with_number);
-
-                        *ch = ';';
-                        node_t semicolon(NodeType::END_OP, DataType::END_OP, ";");
-                        lexems.PushBack(semicolon);
-                    }
-                }
-            }
-            else
-            {
-                node_t word_with_number(NodeType::WORD_WITH_NUMBERS, DataType::UNKNOWN, word_ptr);
-                lexems.PushBack(word_with_number);
-            }
-        }
+        WordAnalysis(word_ptr, lexems);
     }
     node_t term(NodeType::TERMINATED);
     lexems.PushBack(term);
     delete[] word_ptr;
     return lexems;
 }
+
+
+void WordAnalysis(char* word_ptr, List<node_t>& lexems)
+{
+    CHECK_STR_PTR(word_ptr);
+
+    if (isNumber(word_ptr))
+    {
+        node_t number(NodeType::NUMBER, DataType::CONSTANT, (double)atoi(word_ptr)); 
+        lexems.PushBack(number);
+    }
+    else if (isWord(word_ptr))
+    {
+        node_t word(NodeType::WORD, DataType::UNKNOWN, word_ptr);
+        lexems.PushBack(word);
+    }
+    else if (symbol* op = isOperator(word_ptr))
+    {
+        node_t oper(NodeType::OPERATOR, op->type, op->ch);
+        lexems.PushBack(oper);
+    }
+    else if (symbol* br = isBracket(word_ptr))
+    {
+        node_t bracket(NodeType::BRACKET, br->type, br->ch);
+        lexems.PushBack(bracket);
+    }
+    else 
+    {        
+        if (char* ch = isSubstring(word_ptr))
+        {  
+            SubstringAnalysis(word_ptr, ch, lexems);
+        }
+        else
+        {
+            node_t word_with_number(NodeType::WORD_WITH_NUMBERS, DataType::UNKNOWN, word_ptr);
+            lexems.PushBack(word_with_number);
+        }
+    }
+}
+
+
+#define STRSTR(S) if (ch = strstr(str, (S))) { return ch; }
+
+char* isSubstring(char* str)
+{
+    CHECK_STR_PTR(str);
+    
+    char* ch = nullptr;
+    STRSTR(";")
+    else STRSTR("=")
+    else STRSTR("+")
+    else STRSTR("-")
+    else STRSTR("*")
+    else STRSTR("/")
+    else STRSTR("^")
+    else STRSTR("<")
+    else STRSTR(">")
+    else STRSTR("<=")
+    else STRSTR(">=")
+    else STRSTR("==")
+    else STRSTR("!=")
+    else STRSTR("{")
+    else STRSTR("}")
+    else STRSTR("(")
+    else STRSTR(")")
+    else STRSTR("[")
+    else STRSTR("]")
+    else STRSTR(",")
+    return nullptr;
+}
+
+#undef STRSTR
+
+void SubstringAnalysis(char* word_ptr, char* ch, List<node_t>& lexems)
+{
+    CHECK_STR_PTR(word_ptr);
+    CHECK_STR_PTR(ch);
+    
+    char smb = *ch;
+    *ch = '\0';
+    if (word_ptr[0] != '\0') WordAnalysis(word_ptr, lexems);
+    *ch = smb;
+    if (ch[1] == '=')
+    {
+        smb = ch[2];
+        ch[2] = '\0';
+        WordAnalysis(ch, lexems);
+        ch[2] = smb;
+        if (ch[2] != '\0') WordAnalysis(&ch[2], lexems); 
+    }
+    else
+    {
+        smb = ch[1];
+        ch[1] = '\0';
+        WordAnalysis(ch, lexems);
+        ch[1] = smb;
+        if (ch[1] != '\0') WordAnalysis(&ch[1], lexems); 
+    }
+}
+
 
 bool isNumber(char* str)
 {
@@ -103,17 +144,12 @@ bool isWord(char* str)
     return status == i;
 }
 
-bool isSemicolon(char* str)
-{
-    return *str == ';';
-}
-
 symbol* isOperator(char* str)
 {
     CHECK_STR_PTR(str);
 
-    char operators[12][3] = {"+", "-", "=", "*", "<", ">", "/", "^", ">=", "<=", "!=", "=="};
-    int result =  SearchOperator(operators, 12, str);
+    char operators[14][3] = {"+", "-", "=", "*", "<", ">", "/", "^", ">=", "<=", "!=", "==", ";", ","};
+    int result =  SearchOperator(operators, 14, str);
     if (result != -1)
     {
         symbol* op = new symbol;
@@ -154,6 +190,12 @@ symbol* isOperator(char* str)
             break;
         case 11:
             op->type = DataType::JE;
+            break;
+        case 12:
+            op->type = DataType::END_OP;
+            break;
+        case 13:
+            op->type = DataType::COMMA;
             break;
         }
         op->ch = new char[3];

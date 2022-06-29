@@ -5,6 +5,7 @@
 
 List<node_t> ListScan(const char* filename);
 size_t Filesize  (FILE *stream);
+void ClearBuf(char* buffer, size_t filesize, bool* flag);
 
 int main()
 {
@@ -48,14 +49,33 @@ List<node_t> ListScan(const char* filename)
 
 	for (int i = 0; i <= filesize; i++)
 	{
-		if (buffer[i] == '\r' || buffer[i] == '\n')
+		if (buffer[i] == '\r' || buffer[i] == '\n' || buffer[i] == '\t')
 		{
 			buffer[i] = ' ';
-			for (int j = i; buffer[j + 1] != '\0'; j++)
-			{
-				buffer[j + 1] = buffer[j + 2];
-			}
-		}
-	}
+        }
+    }
+    bool flag = false;
+    do
+    {
+        flag = false;
+        ClearBuf(buffer, filesize, &flag);
+    } while (flag);
+    
     return AnalysProcessing(buffer, filesize + 1);
+}
+
+
+void ClearBuf(char* buffer, size_t filesize, bool* flag)
+{
+    for (int i = 0; i <= filesize; i++)
+	{
+        if (buffer[i] == ' ' && buffer[i + 1] == ' ')
+		{
+			for (int j = i; buffer[j] != '\0'; j++)
+            {
+                buffer[j] = buffer[j + 1];
+            }
+            *flag = true;
+        }
+    }
 }

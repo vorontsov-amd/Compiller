@@ -167,6 +167,15 @@ node_t::node_t(const NodeType::nodeType N_type, const DataType::dataType D_type,
 // 	right = nullptr;
 // }
 
+node_t::node_t(const NodeType::nodeType N_type, const DataType::dataType D_type)
+{
+	type = N_type;
+	data = data_t(D_type);
+	left = nullptr;
+	right = nullptr;
+}
+
+
 node_t::node_t(const NodeType::nodeType N_type, const DataType::dataType D_type, double number)
 {
 	type = N_type;
