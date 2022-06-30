@@ -24,7 +24,7 @@ void WordAnalysis(char* word_ptr, List<node_t>& lexems)
 
     if (isNumber(word_ptr))
     {
-        node_t number(NodeType::NUMBER, DataType::CONSTANT, (double)atoi(word_ptr)); 
+        node_t number(NodeType::NUMBER, DataType::CONSTANT, atof(word_ptr)); 
         lexems.PushBack(number);
     }
     else if (isWord(word_ptr))

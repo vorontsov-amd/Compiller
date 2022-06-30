@@ -201,6 +201,18 @@ public:
 			break;
 		}
 	}
+	
+	node_t& SetLeft(node_t* _left)
+	{
+		left = _left;
+		return *this;
+	}
+
+	node_t& SetRight(node_t* _right)
+	{
+		right = _right;
+		return *this;
+	}
 
 protected:
 	data_t data;

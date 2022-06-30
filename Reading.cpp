@@ -46,12 +46,14 @@ void CheckValidFunc(List<node_t>& programm)
 node_t* GetOpSequence(List<node_t>& programm)
 {    
 	node_t* first_op = GetOperator(programm);
+	node_t* current = first_op;
     while (programm.ShowFront().dType() == DataType::END_OP)
     {
 		programm.PopFront();
-
 		node_t* second_op = GetOperator(programm);
-        first_op = new node_t(NodeType::OPERATOR, DataType::END_OP, ";", first_op, second_op);
+        current->SetRight(second_op);
+		current = second_op;
+		//first_op = new node_t(NodeType::OPERATOR, DataType::END_OP, ";", first_op, second_op);
     }
     return first_op;
 }
@@ -64,21 +66,21 @@ node_t* GetOperator(List<node_t>& programm)
 		{
 			node_t* op = GetIfWhile(programm);
 			op->SetDtype(DataType::WHILE);
-			return op;
+			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
 		else if(strcmp(programm.ShowFront().value().string_ptr, "if") == 0)
 		{
 			node_t* op = GetIfWhile(programm);
 			op->SetDtype(DataType::IF);
-			return op;
+			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
 		else if(strcmp(programm.ShowFront().value().string_ptr, "var") == 0)
 		{
-			return GetInit(programm);
+			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", GetInit(programm), nullptr);
 		}
 		else 
 		{
-			return GetCallFunc(programm);
+			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", GetCallFunc(programm), nullptr);
 		}
 	}
 	return nullptr;

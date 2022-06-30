@@ -1,0 +1,11 @@
+digraph Dump{
+Node0x561929f38dd0[shape="record", label="Data: define"];
+Node0x561929f38e20[shape="record", label="Data: pizdec"];
+Node0x561929f38e70[shape="record", label="Data: ;"];
+Node0x561929f38ec0[shape="record", label="Data: var"];
+Node0x561929f38f10[shape="record", label="Data: sosat"];
+Node0x561929f38ec0->Node0x561929f38f10;
+Node0x561929f38e70->Node0x561929f38ec0;
+Node0x561929f38e20->Node0x561929f38e70;
+Node0x561929f38dd0->Node0x561929f38e20;
+}

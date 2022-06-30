@@ -1,11 +1,14 @@
 define main()
 {
     var pivo = 10;
+    pivo = pivo + 1;
 
     while (pivo != 0)
     {
         drink(pivo);
         pivo = -pivo -1;
+        var vodka = 10;
+        vodka = vodka * 0.9;
     };
 }
 
