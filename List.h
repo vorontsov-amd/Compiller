@@ -259,9 +259,13 @@ template <typename T> T			 List<T>::ShowFront					()
 
 template <typename T> void		 List<T>::GraphDump			(const char * const graphname)
 {				
-	size_t length = strlen(graphname) + 40;
+	char* name = (char*)calloc(strlen(graphname) + 10, sizeof(char));
+	strcpy(name, "ListDump/");
+	strcat(name, graphname);
+
+	size_t length = strlen(name) + 40;
 	char* command = (char*)calloc(length, sizeof(char));
-	strcpy(command, graphname);
+	strcpy(command, name);
 	strcat(command, ".dot");
 	
 	std::ofstream dumpfile;
@@ -309,10 +313,10 @@ template <typename T> void		 List<T>::GraphDump			(const char * const graphname)
 	dumpfile.close();
 
 	strcpy(command, "dot -Tpdf ");
-	strcat(command, graphname);
+	strcat(command, name);
 	strcat(command, ".dot");
 	strcat(command, " -o ");
-	strcat(command, graphname);
+	strcat(command, name);
 	strcat(command, ".pdf");
 	system(command);
 }

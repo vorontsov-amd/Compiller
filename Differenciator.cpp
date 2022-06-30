@@ -85,9 +85,13 @@ int DifferTree::Print()
 
 void DifferTree::GraphDump(const char* graphname)
 {
-	size_t length = strlen(graphname) + 50;
+	char* name = (char*)calloc(strlen(graphname) + 10, sizeof(char));
+	strcpy(name, "TreeDump/");
+	strcat(name, graphname);
+	
+	size_t length = strlen(name) + 50;
 	char* command = new char[length] {};
-	strncpy(command, graphname, length);
+	strncpy(command, name, length);
 	strncat(command, ".dot", length);
 
 	std::ofstream dumpfile;
@@ -100,17 +104,17 @@ void DifferTree::GraphDump(const char* graphname)
 	dumpfile.close();
 
 	strncpy(command, "iconv -f cp1251 -t utf-8 ", length);
-	strncat(command, graphname, length);
+	strncat(command, name, length);
 	strncat(command, ".dot > ", length);
-	strncat(command, graphname, length);
+	strncat(command, name, length);
 	strncat(command, "-utf8.dot", length);
 	system(command);
 
 	strncpy(command, "dot -Tpdf ", length);
-	strncat(command, graphname, length);
+	strncat(command, name, length);
 	strncat(command, "-utf8.dot", length);
 	strncat(command, " -o ", length);
-	strncat(command, graphname, length);
+	strncat(command, name, length);
 	strncat(command, ".pdf", length);
 
 	system(command);

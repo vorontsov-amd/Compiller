@@ -1,0 +1,11 @@
+digraph pizdec{
+Node0x558e338cbfa0[shape="record", label="Data: define"];
+Node0x558e338cc400[shape="record", label="Data: pizdec"];
+Node0x558e338cc0e0[shape="record", label="Data: ;"];
+Node0x558e338cbff0[shape="record", label="Data: var"];
+Node0x558e338cc130[shape="record", label="Data: sosat"];
+Node0x558e338cbff0->Node0x558e338cc130;
+Node0x558e338cc0e0->Node0x558e338cbff0;
+Node0x558e338cc400->Node0x558e338cc0e0;
+Node0x558e338cbfa0->Node0x558e338cc400;
+}
