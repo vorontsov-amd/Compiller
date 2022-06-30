@@ -250,38 +250,25 @@ node_t::node_t(node_t& node)
 
 node_t::node_t(node_t* node)
 {
-	puts("DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD");
-	// data = node->data;
-	// type = node->type;
-	// if (left != nullptr && node->left != nullptr)
-	// {
-	// 	*left = *(node->left);
-	// }
-	// else if (left == nullptr && node->left != nullptr)
-	// {
-	// 	left = new node_t;
-	// 	*left = *(node->left);
-	// }
-	// else if (left != nullptr && node->left == nullptr)
-	// {
-	// 	delete left;
-	// 	left = nullptr;
-	// }
+	data = node->data;
+	type = node->type;
+	if (node->left != nullptr)
+	{
+		left = new node_t(*node->left);
+	}
+	else 
+	{
+		left = nullptr;
+	}
 
-	// if (right != nullptr && node->right != nullptr)
-	// {
-	// 	*right = *(node->right);
-	// }
-	// else if (right == nullptr && node->right != nullptr)
-	// {
-	// 	right = new node_t;
-	// 	*right = *(node->right);
-	// }
-	// else if (right != nullptr && node->right == nullptr)
-	// {
-	// 	delete right;
-	// 	right = nullptr;
-	// }
+	if (node->right != nullptr)
+	{
+		right = new node_t(*node->right);
+	}
+	else 
+	{
+		right = nullptr;
+	}
 }
 
 node_t::~node_t()

@@ -9,3 +9,13 @@ define main()
     };
 }
 
+define drink(pivo)
+{
+    pivo = 0;
+}
+
+
+define pizdec()
+{
+    var sosat;
+}

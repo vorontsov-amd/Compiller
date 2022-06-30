@@ -9,7 +9,7 @@
     }                               
 
 
-node_t& GetGrammar(List<node_t>& programm);
+List<DifferTree> GetGrammar(List<node_t>& programm);
 node_t* GetOpSequence(List<node_t>& programm);
 node_t* GetOperator(List<node_t>& programm);
 node_t* GetVar(List<node_t>& programm);
@@ -28,7 +28,7 @@ void CheckWord(List<node_t>& programm);
 node_t* GetRetFunc(List<node_t>& programm);
 node_t* GetCallFunc(List<node_t>& programm);
 node_t* GetFunc(List<node_t>& programm, node_t& func);
-node_t* GetDefFunc(List<node_t>& programm);
+node_t& GetDefFunc(List<node_t>& programm);
 char* Funcname(node_t& func);
 node_t* GetParamSequence(List<node_t>& programm);
 void CheckValidFunc(List<node_t>& programm);

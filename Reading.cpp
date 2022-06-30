@@ -1,22 +1,20 @@
 #include "Reading.h"
 
 
-node_t& GetGrammar(List<node_t>& programm)
+List<DifferTree> GetGrammar(List<node_t>& programm)
 {    
-	node_t* root = GetDefFunc(programm);
-
-    if (programm.ShowFront().Type() != NodeType::TERMINATED)
-    {
-		fprintf(stderr, "THE TERMINATING CHARACTER WAS NOT RECEIVED. ");
-        std::cout << "RECIVED: \n" << programm.ShowFront() << "\n";
-		exit(EXIT_FAILURE);
-    }
-
-	return *root;
+	List<DifferTree> project;
+	while (programm.ShowFront().Type() != NodeType::TERMINATED)
+	{
+		DifferTree* tree = new DifferTree(GetDefFunc(programm));
+		tree->GraphDump();
+		project.PushBack(*tree);
+	}
+	return project;
 }
 
 
-node_t* GetDefFunc(List<node_t>& programm)
+node_t& GetDefFunc(List<node_t>& programm)
 {
 	CheckValidFunc(programm);
 	node_t func = programm.ShowFront();
@@ -30,7 +28,7 @@ node_t* GetDefFunc(List<node_t>& programm)
 	CheckClsShapeBr(programm);
 
 	node_t* function = new node_t(NodeType::WORD, DataType::FUNC, func.value().string_ptr, left, right);
-	return new node_t(NodeType::WORD, DataType::DEFINE, "define", nullptr, function);
+	return *new node_t(NodeType::WORD, DataType::DEFINE, "define", nullptr, function);
 }
 
 void CheckValidFunc(List<node_t>& programm)

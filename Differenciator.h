@@ -1,21 +1,15 @@
 #pragma once
 #include "data_t.h"
 
-
-node_t* GetN();
-node_t* GetT();
-node_t* GetE();
-node_t* GetP();
-node_t* GetF();
-node_t* GetV();
-node_t* GetW();
-node_t* GetG(const char* str);
-//int ReadFunc(type_t* n);
-int ReadVar(char* c);
-
-
-
 #define FUCK fprintf(stderr, "%d %s\n", __LINE__, __FUNCSIG__);
+
+
+enum class answer
+{
+	left,
+	right,
+	root,
+};
 
 
 
@@ -45,6 +39,8 @@ public:
 	int TreeScan(const char* filename = "formula.txt");
 	int Print();
 	void GraphDump(const char* graphname = "Dump");
+	node_t& ShowCurrent();
+	node_t* UpdateCurrent(answer ans);
 
 
 	node_t* Root()
@@ -54,6 +50,7 @@ public:
 
 private:
 	node_t* root;
+	node_t* current_node;
 
 	void CreateNode(const data_t& data, node_t*& node);
 	void Read(std::ifstream& file, node_t*& node, data_t& element);

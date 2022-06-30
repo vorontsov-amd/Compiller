@@ -2,17 +2,40 @@
 #include "lexical_analysis.h"
 #include "Reading.h"
 #include "sys/stat.h"
+#include "stdlib.h"
 
 List<node_t> ListScan(const char* filename);
 size_t Filesize  (FILE *stream);
 void ClearBuf(char* buffer, size_t filesize, bool* flag);
+void ProgrammDump(List<DifferTree>& tree);
+char* NameFunc(DifferTree tree);
 
 int main()
 {
 	List<node_t> lst = ListScan("main.amd");
 	lst.GraphDump();
-	DifferTree tree(GetGrammar(lst));
-	tree.GraphDump();
+	List<DifferTree> tree = GetGrammar(lst);  
+    ProgrammDump(tree);  
+}
+
+void ProgrammDump(List<DifferTree>& tree)
+{
+    int size = tree.Size();
+
+    for (int i = 0; i < size; i++)
+    {
+        char* func = NameFunc(tree.ShowFront());
+        tree.ShowFront().GraphDump(func);
+        tree.PopFront();
+    }
+}
+
+char* NameFunc(DifferTree tree)
+{
+    tree.UpdateCurrent(answer::right);
+    char* str = tree.ShowCurrent().value().string_ptr;
+    tree.UpdateCurrent(answer::root);
+    return str;
 }
 
 
