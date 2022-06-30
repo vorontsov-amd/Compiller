@@ -1,12 +1,11 @@
-define main(t)
+define main()
 {
-    var x;
-    while (x == 6)
+    var pivo = 10;
+
+    while (pivo != 0)
     {
-        var y = sin(x);
-    };
-    if (y != 0)
-    {
-        print(t);
+        drink(pivo);
+        pivo = -pivo -1;
     };
 }
+

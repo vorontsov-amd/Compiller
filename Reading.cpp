@@ -337,14 +337,7 @@ node_t* GetExpression(List<node_t>& programm)
 		}
 		else
 		{
-			if (val->Type() == NodeType::NUMBER && val->dType() == DataType::UNKNOWN)
-			{
-				val = new node_t(NodeType::OPERATOR, DataType::SUB, "-", nullptr, val2);
-			}
-			else
-			{
-				val = new node_t(NodeType::OPERATOR, DataType::SUB, "-", val, val2);
-			}
+			val = new node_t(NodeType::OPERATOR, DataType::SUB, "-", val, val2);
 		}
 	}
 	return val;
@@ -366,7 +359,7 @@ node_t* GetPrimaryExpression(List<node_t>& programm)
 node_t* GetVar(List<node_t>& programm)
 {
 	node_t var = programm.ShowFront();
-	if (programm.ShowFront().Type() != NodeType::WORD || programm.ShowFront().Type() != NodeType::WORD_WITH_NUMBERS)
+	if (programm.ShowFront().Type() == NodeType::WORD || programm.ShowFront().Type() == NodeType::WORD_WITH_NUMBERS)
     {
 		node_t var = programm.ShowFront();
         programm.PopFront();
@@ -388,5 +381,5 @@ node_t* GetNumber(List<node_t>& programm)
         programm.PopFront();
         return new node_t(number);
     }
-	return new node_t(NodeType::NUMBER, DataType::UNKNOWN);
+	return nullptr;
 }
