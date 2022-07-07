@@ -7,7 +7,6 @@ List<DifferTree> GetGrammar(List<node_t>& programm)
 	while (programm.ShowFront().Type() != NodeType::TERMINATED)
 	{
 		DifferTree* tree = new DifferTree(GetDefFunc(programm));
-		tree->GraphDump();
 		project.PushBack(*tree);
 	}
 	return project;

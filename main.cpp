@@ -15,7 +15,7 @@ int main()
 {
 	List<node_t> lst = ListScan("main.amd");
 	lst.GraphDump();
-	List<DifferTree> tree = GetGrammar(lst);  
+	List<DifferTree> tree = GetGrammar(lst);
     ProgrammDump(tree);  
     TranslateToAsm(tree);
 }

@@ -1,0 +1,37 @@
+digraph func{
+Node0x55bca0ae15e0[shape="record", label="Data: define"];
+Node0x55bca0ae17c0[shape="record", label="Data: func"];
+Node0x55bca0ae1630[shape="record", label="Data: ,"];
+Node0x55bca0ae1770[shape="record", label="Data: ,"];
+Node0x55bca0ae1680[shape="record", label="Data: ,"];
+Node0x55bca0ae1720[shape="record", label="Data: argc"];
+Node0x55bca0ae1680->Node0x55bca0ae1720;
+Node0x55bca0ae16d0[shape="record", label="Data: argv"];
+Node0x55bca0ae1680->Node0x55bca0ae16d0;
+Node0x55bca0ae1770->Node0x55bca0ae1680;
+Node0x55bca0ae1540[shape="record", label="Data: arg3"];
+Node0x55bca0ae1770->Node0x55bca0ae1540;
+Node0x55bca0ae1630->Node0x55bca0ae1770;
+Node0x55bca0ae1950[shape="record", label="Data: arg4"];
+Node0x55bca0ae1630->Node0x55bca0ae1950;
+Node0x55bca0ae17c0->Node0x55bca0ae1630;
+Node0x55bca0ae1a90[shape="record", label="Data: ;"];
+Node0x55bca0ae1a40[shape="record", label="Data: var"];
+Node0x55bca0ae19f0[shape="record", label="Data: pivo"];
+Node0x55bca0ae1a40->Node0x55bca0ae19f0;
+Node0x55bca0ae1a90->Node0x55bca0ae1a40;
+Node0x55bca0ae1900[shape="record", label="Data: ;"];
+Node0x55bca0ae1810[shape="record", label="Data: scanf()"];
+Node0x55bca0ae1590[shape="record", label="Data: pivo"];
+Node0x55bca0ae1810->Node0x55bca0ae1590;
+Node0x55bca0ae1900->Node0x55bca0ae1810;
+Node0x55bca0ae19a0[shape="record", label="Data: ;"];
+Node0x55bca0ae18b0[shape="record", label="Data: drink()"];
+Node0x55bca0ae1860[shape="record", label="Data: pivo"];
+Node0x55bca0ae18b0->Node0x55bca0ae1860;
+Node0x55bca0ae19a0->Node0x55bca0ae18b0;
+Node0x55bca0ae1900->Node0x55bca0ae19a0;
+Node0x55bca0ae1a90->Node0x55bca0ae1900;
+Node0x55bca0ae17c0->Node0x55bca0ae1a90;
+Node0x55bca0ae15e0->Node0x55bca0ae17c0;
+}

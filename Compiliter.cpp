@@ -9,7 +9,7 @@ void TranslateToAsm(List<DifferTree>& proga)
     
     WritePreamble(fasm, proga);
 
-    TranslateProcessing(proga);
+    TranslateProcessing(fasm, proga);
 
     fclose(fasm);
 }
@@ -36,16 +36,16 @@ char* MainFuncName(List<DifferTree>& proga)
 void WritePreamble(FILE* fasm, List<DifferTree>& proga)
 {
     fputs("global main\n", fasm);
-    fputs("extern printf, scanf\n", fasm);
+    fputs("extern printf, scanf\n\n", fasm);
     fputs("section .data\n", fasm);
-    fputs("doublestr: db '\%lg', 0x0\n", fasm);
+    fputs("doublestr: db '\%lg', 0x0\n\n", fasm);
     fputs("section .text\n", fasm);
     fputs("\%define ", fasm);
     fputs(MainFuncName(proga), fasm);
-    fputs(" main", fasm);
+    fputs(" main\n", fasm);
 }
 
-void TranslateProcessing(List<DifferTree>& proga)
+void TranslateProcessing(FILE* fasm, List<DifferTree>& proga)
 {
     int size = proga.Size();
     DifferTree function;
@@ -53,15 +53,23 @@ void TranslateProcessing(List<DifferTree>& proga)
     for (int i = 0; i < size; i++)
     {
         function = proga.ShowFront();
-        TreeTranslate(function);
+        fputc('\n', fasm);
+        TreeTranslate(fasm, function);
         proga.PopFront();
     }
 }
 
 
-void TreeTranslate(DifferTree& function)
+void TreeTranslate(FILE* fasm, DifferTree& function)
 {
     VerifyFunc(function);
+
+    char* mark = FuncName(function);
+    fputs(mark, fasm);
+    fputs(":\n", fasm);
+    fputs("\t\tpush\trbp\n", fasm);
+    fputs("\t\tmov\t\trbp, rsp\n", fasm);
+
 }
 
 void VerifyFunc(DifferTree& function)
@@ -75,4 +83,9 @@ void VerifyFunc(DifferTree& function)
     {
         function.UpdateCurrent(answer::right);
     }
+}
+
+inline char* FuncName(DifferTree& function)
+{
+    return function.ShowCurrent()->value().string_ptr;
 }

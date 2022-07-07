@@ -1,4 +1,4 @@
-define main()
+define func(argc, argv, arg3, arg4)
 {
     var pivo;
     scanf(pivo);
