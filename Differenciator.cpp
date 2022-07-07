@@ -10,7 +10,6 @@ DifferTree::DifferTree()
 
 DifferTree::DifferTree(DifferTree& tree)
 {
-	//std::cout << tree.root << "\n";
 	root = new node_t(tree.root);
 	current_node = root;
 }
@@ -205,6 +204,7 @@ DifferTree& DifferTree::operator=(const DifferTree& tree)
 	if (tree.root)
 	{
 		*root = *tree.root;
+		current_node = root; //fix. no saving current node
 	}
 	return *this;
 }

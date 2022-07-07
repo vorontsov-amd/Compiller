@@ -61,7 +61,6 @@ void TranslateProcessing(List<DifferTree>& proga)
 
 void TreeTranslate(DifferTree& function)
 {
-    function.UpdateCurrent(answer::root);
     VerifyFunc(function);
 }
 
@@ -69,6 +68,7 @@ void VerifyFunc(DifferTree& function)
 {
     if (function.ShowCurrent()->dType() != DataType::DEFINE)
     {
+        std::cout << *function.ShowCurrent() << "\n";
         fprintf(stderr, "Error reading the function tree\n");
     }
     else 
