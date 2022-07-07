@@ -3,17 +3,11 @@
 
 void TranslateToAsm(List<DifferTree>& proga)
 {
-    LOX
-
     char* programm_name = ProgrammName(proga);
 
     FILE* fasm = fopen(programm_name, "w");
     
-    LOX
-    
     WritePreamble(fasm, proga);
-
-    LOX
 
     TranslateProcessing(proga);
 
@@ -22,9 +16,7 @@ void TranslateToAsm(List<DifferTree>& proga)
 
 char* ProgrammName(List<DifferTree>& proga)
 {
-    LOX
     char* name = MainFuncName(proga);
-    LOX
     char* fullname = new char[strlen(name) + 5];
     strcpy(fullname, name);
     strcat(fullname, ".asm");
@@ -34,15 +26,9 @@ char* ProgrammName(List<DifferTree>& proga)
 
 char* MainFuncName(List<DifferTree>& proga)
 {
-    LOX    
     DifferTree main_func = proga.ShowFront();
-    LOX
     main_func.UpdateCurrent(answer::right);
-    LOX
-    char* name = proga.ShowFront().ShowCurrent().value().string_ptr;
-    LOX
-    proga.ShowFront().UpdateCurrent(answer::root);
-    LOX
+    char* name = main_func.ShowCurrent()->value().string_ptr;
     return name;
 }
 
@@ -75,14 +61,13 @@ void TranslateProcessing(List<DifferTree>& proga)
 
 void TreeTranslate(DifferTree& function)
 {
+    function.UpdateCurrent(answer::root);
     VerifyFunc(function);
-
-    
 }
 
 void VerifyFunc(DifferTree& function)
 {
-    if (function.ShowCurrent().dType() != DataType::DEFINE)
+    if (function.ShowCurrent()->dType() != DataType::DEFINE)
     {
         fprintf(stderr, "Error reading the function tree\n");
     }

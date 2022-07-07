@@ -8,7 +8,7 @@
 List<node_t> ListScan(const char* filename);
 size_t Filesize  (FILE *stream);
 void ClearBuf(char* buffer, size_t filesize, bool* flag);
-void ProgrammDump(List<DifferTree>& tree);
+void ProgrammDump(List<DifferTree> tree);
 char* NameFunc(DifferTree tree);
 
 int main()
@@ -20,7 +20,7 @@ int main()
     TranslateToAsm(tree);
 }
 
-void ProgrammDump(List<DifferTree>& tree)
+void ProgrammDump(List<DifferTree> tree)
 {
     int size = tree.Size();
 
@@ -35,7 +35,7 @@ void ProgrammDump(List<DifferTree>& tree)
 char* NameFunc(DifferTree tree)
 {
     tree.UpdateCurrent(answer::right);
-    char* str = tree.ShowCurrent().value().string_ptr;
+    char* str = tree.ShowCurrent()->value().string_ptr;
     tree.UpdateCurrent(answer::root);
     return str;
 }

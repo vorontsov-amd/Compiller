@@ -28,6 +28,7 @@ class DifferTree
 public:
 	DifferTree();
 	DifferTree(DifferTree& tree);
+	DifferTree(DifferTree&& tree);
 	DifferTree(node_t* _root);
 	DifferTree(node_t& _root);
 	~DifferTree();
@@ -39,7 +40,7 @@ public:
 	int TreeScan(const char* filename = "formula.txt");
 	int Print();
 	void GraphDump(const char* graphname = "Dump");
-	node_t& ShowCurrent();
+	node_t* ShowCurrent();
 	node_t* UpdateCurrent(answer ans);
 	DifferTree& operator=(const DifferTree& tree);
 

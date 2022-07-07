@@ -10,9 +10,17 @@ DifferTree::DifferTree()
 
 DifferTree::DifferTree(DifferTree& tree)
 {
+	//std::cout << tree.root << "\n";
 	root = new node_t(tree.root);
 	current_node = root;
 }
+
+DifferTree::DifferTree(DifferTree&& tree)
+{
+	root = new node_t(tree.root);
+	current_node = root;
+}
+
 
 DifferTree::DifferTree(node_t* _root)
 {
@@ -165,9 +173,9 @@ void DifferTree::SwapSon(node_t* parrent)
 }
 
 
-node_t& DifferTree::ShowCurrent()
+node_t* DifferTree::ShowCurrent()
 {
-	return *current_node;
+	return current_node;
 }
 node_t* DifferTree::UpdateCurrent(answer ans)
 {
