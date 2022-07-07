@@ -1,3 +1,4 @@
+#pragma once
 #include "List.h"
 #include "data_t.h"
 

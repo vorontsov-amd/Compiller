@@ -1,15 +1,21 @@
 digraph drink{
-Node0x561929f38fa0[shape="record", label="Data: define"];
-Node0x561929f39040[shape="record", label="Data: drink"];
-Node0x561929f39090[shape="record", label="Data: pivo"];
-Node0x561929f39040->Node0x561929f39090;
-Node0x561929f390e0[shape="record", label="Data: ;"];
-Node0x561929f39130[shape="record", label="Data: ="];
-Node0x561929f39180[shape="record", label="Data: pivo"];
-Node0x561929f39130->Node0x561929f39180;
-Node0x561929f39b30[shape="record", label="Data: 0"];
-Node0x561929f39130->Node0x561929f39b30;
-Node0x561929f390e0->Node0x561929f39130;
-Node0x561929f39040->Node0x561929f390e0;
-Node0x561929f38fa0->Node0x561929f39040;
+Node0x559510238e50[shape="record", label="Data: define"];
+Node0x559510238cc0[shape="record", label="Data: drink"];
+Node0x559510238ef0[shape="record", label="Data: pivo"];
+Node0x559510238cc0->Node0x559510238ef0;
+Node0x559510238c70[shape="record", label="Data: ;"];
+Node0x559510238db0[shape="record", label="Data: ="];
+Node0x559510238f40[shape="record", label="Data: pivo"];
+Node0x559510238db0->Node0x559510238f40;
+Node0x559510238d10[shape="record", label="Data: 0"];
+Node0x559510238db0->Node0x559510238d10;
+Node0x559510238c70->Node0x559510238db0;
+Node0x559510238d60[shape="record", label="Data: ;"];
+Node0x559510238e00[shape="record", label="Data: printf()"];
+Node0x559510238ea0[shape="record", label="Data: pivo"];
+Node0x559510238e00->Node0x559510238ea0;
+Node0x559510238d60->Node0x559510238e00;
+Node0x559510238c70->Node0x559510238d60;
+Node0x559510238cc0->Node0x559510238c70;
+Node0x559510238e50->Node0x559510238cc0;
 }

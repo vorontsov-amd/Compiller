@@ -1,5 +1,6 @@
 #include "Differenciator.h"
 #include "lexical_analysis.h"
+#include "Compiliter.h"
 #include "Reading.h"
 #include "sys/stat.h"
 #include "stdlib.h"
@@ -16,6 +17,7 @@ int main()
 	lst.GraphDump();
 	List<DifferTree> tree = GetGrammar(lst);  
     ProgrammDump(tree);  
+    TranslateToAsm(tree);
 }
 
 void ProgrammDump(List<DifferTree>& tree)

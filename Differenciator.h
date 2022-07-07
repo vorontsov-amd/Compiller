@@ -41,6 +41,7 @@ public:
 	void GraphDump(const char* graphname = "Dump");
 	node_t& ShowCurrent();
 	node_t* UpdateCurrent(answer ans);
+	DifferTree& operator=(const DifferTree& tree);
 
 
 	node_t* Root()

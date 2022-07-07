@@ -1,2 +1,5 @@
 main
 .vscode
+test
+test.asm
+test.o

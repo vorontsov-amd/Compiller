@@ -1,24 +1,12 @@
 define main()
 {
-    var pivo = 10;
-    pivo = pivo + 1;
-
-    while (pivo != 0)
-    {
-        drink(pivo);
-        pivo = -pivo -1;
-        var vodka = 10;
-        vodka = vodka * 0.9;
-    };
+    var pivo;
+    scanf(pivo);
+    drink(pivo);
 }
 
 define drink(pivo)
 {
     pivo = 0;
-}
-
-
-define pizdec()
-{
-    var sosat;
+    printf(pivo);
 }

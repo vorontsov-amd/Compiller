@@ -53,7 +53,6 @@ node_t* GetOpSequence(List<node_t>& programm)
 		node_t* second_op = GetOperator(programm);
         current->SetRight(second_op);
 		current = second_op;
-		//first_op = new node_t(NodeType::OPERATOR, DataType::END_OP, ";", first_op, second_op);
     }
     return first_op;
 }

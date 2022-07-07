@@ -187,3 +187,16 @@ node_t* DifferTree::UpdateCurrent(answer ans)
 	}
 	return current_node;
 }
+
+DifferTree& DifferTree::operator=(const DifferTree& tree)
+{
+	if (root == nullptr)
+	{
+		root = new node_t;
+	}
+	if (tree.root)
+	{
+		*root = *tree.root;
+	}
+	return *this;
+}

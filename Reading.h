@@ -1,3 +1,4 @@
+#pragma once
 #include "Differenciator.h"
 #include "List.h"
 
