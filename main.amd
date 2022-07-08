@@ -1,10 +1,9 @@
 define func(argc, argv, arg3, arg4)
 {
     var pivo;
-    scanf(pivo);
+    scanf(pivo, argc);
     var vodka = pivo + 1;
-    drink(pivo);
-    var sex = 0;
+    var sex;
 }
 
 define drink(pivo)

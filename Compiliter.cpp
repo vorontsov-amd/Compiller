@@ -64,7 +64,77 @@ void TreeTranslate(FILE* fasm, DifferTree& function)
 {
     VerifyDefFunc(function);
     PrintProlog(fasm, function);
+
+    node_t* func = function.ShowCurrent();
+
+    TranslateOpSequence(fasm, func);
 }
+
+
+void TranslateOpSequence(FILE* fasm, node_t* node)
+{
+    VerifyFunc(node);
+    char* funcname = NodeName(node);
+    node = node->GetRight();
+
+    while (node && (node->dType() == DataType::END_OP))
+    {
+        TranslateOp(fasm, node->GetLeft(), funcname);
+        node = node->GetRight();
+    }
+}
+
+void TranslateOp(FILE* fasm, node_t* node, char* funcname)
+{
+    switch (node->dType())
+    {
+    case DataType::FUNC:
+        TranslateCallFunc(fasm, node, funcname);
+        break;
+    case DataType::INITIALIZATE:
+        TranslateInit(fasm, node, funcname);
+        break;
+    default:
+        break;
+    }
+}
+
+void TranslateInit(FILE* fasm, node_t* node, char* funcname)
+{
+    node = node->GetRight();
+    static char* namefunc = funcname;
+    static int offset = 8;
+
+    if (namefunc != funcname)
+    {
+        offset = 8;
+    }
+    if (node->dType() == DataType::VARIABLE)
+    {
+        fprintf(fasm, "%%define %s_%s qword [rbp - %d]\n", funcname, NodeName(node), offset);
+        if (namefunc == funcname) offset += 8;
+        namefunc = funcname;
+    }
+}
+
+
+void TranslateCallFunc(FILE* fasm, node_t* node, char* funcname)
+{
+    char* call_func = NodeName(node);
+    node = node->GetRight();
+    if (node)
+    {
+        while (node->dType() == DataType::COMMA)
+        {                    
+            fprintf(fasm, "\t\tpush\t%s_%s\n", funcname, NodeName(node->GetRight()));
+            node = node->GetLeft();
+        }
+        fprintf(fasm, "\t\tpush\t%s_%s\n", funcname, NodeName(node));
+    }
+    fprintf(fasm, "\t\tcall\t%s\n", call_func);
+}
+
+
 
 
 void PrintProlog(FILE* fasm, DifferTree& function)
@@ -84,14 +154,12 @@ void PrintProlog(FILE* fasm, DifferTree& function)
     NumVar(num_param, func_node);
     if (num_param % 2 == 0)
     {
-        fprintf(fasm, "\t\tsub\t\trsp, %d", num_param * 8);
+        fprintf(fasm, "\t\tsub\t\trsp, %d\n", num_param * 8);
     }
     else
     {
-        fprintf(fasm, "\t\tsub\t\trsp, %d", (num_param + 1) * 8);
+        fprintf(fasm, "\t\tsub\t\trsp, %d\n", (num_param + 1) * 8);
     }
-
-
 }
 
 void PrintDefineParam(FILE* fasm, node_t* node)

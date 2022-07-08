@@ -16,3 +16,7 @@ void PrintProlog(FILE* fasm, DifferTree& function);
 void VerifyFunc(node_t* node);
 void PrintDefineParam(FILE* fasm, node_t* node);
 int NumParam(node_t* node);
+void TranslateOpSequence(FILE* fasm, node_t* node);
+void TranslateOp(FILE* fasm, node_t* node, char* funcname);
+void TranslateCallFunc(FILE* fasm, node_t* node, char* funcname);
+void TranslateInit(FILE* fasm, node_t* node, char* funcname);

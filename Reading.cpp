@@ -122,7 +122,7 @@ node_t* GetFunc(List<node_t>& programm, node_t& func)
 	programm.PopFront();
 	node_t* first_parametr = GetParamSequence(programm);
 	CheckClsRoundBr(programm);
-	char* funcname = Funcname(func);
+	char* funcname = func.value().string_ptr;
 	return new node_t(NodeType::WORD, DataType::FUNC, funcname, nullptr, first_parametr);
 }
 
@@ -361,7 +361,9 @@ node_t* GetVar(List<node_t>& programm)
     {
 		node_t var = programm.ShowFront();
         programm.PopFront();
-        return new node_t(var);
+        node_t* var_ptr = new node_t(var);
+		var_ptr->SetDtype(DataType::VARIABLE);
+		return var_ptr;
     }
     else
 	{ 

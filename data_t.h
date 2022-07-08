@@ -196,6 +196,8 @@ public:
 			data.value.string_ptr = new char[6];
 			strcpy(data.value.string_ptr, "if");
 			break;
+		case DataType::VARIABLE:
+			break;
 		default:
 			puts("Update functions SetDtype()");
 			break;
