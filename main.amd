@@ -2,11 +2,19 @@ define func(argc, argv, arg3, arg4)
 {
     var pivo;
     scanf(pivo);
+    var vodka = pivo + 1;
     drink(pivo);
+    var sex = 0;
 }
 
 define drink(pivo)
 {
     pivo = 0;
     printf(pivo);
+    exit();
+}
+
+define exit()
+{
+    var x;
 }

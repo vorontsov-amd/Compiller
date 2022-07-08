@@ -214,6 +214,16 @@ public:
 		return *this;
 	}
 
+	node_t* GetLeft()
+	{
+		return left;
+	}
+
+	node_t* GetRight()
+	{
+		return right;
+	}
+
 protected:
 	data_t data;
 	NodeType::nodeType type;

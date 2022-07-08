@@ -62,17 +62,92 @@ void TranslateProcessing(FILE* fasm, List<DifferTree>& proga)
 
 void TreeTranslate(FILE* fasm, DifferTree& function)
 {
-    VerifyFunc(function);
+    VerifyDefFunc(function);
+    PrintProlog(fasm, function);
+}
 
-    char* mark = FuncName(function);
+
+void PrintProlog(FILE* fasm, DifferTree& function)
+{
+    node_t* func_node = function.ShowCurrent();
+    
+    char* mark = NodeName(func_node);
     fputs(mark, fasm);
     fputs(":\n", fasm);
+    
+    PrintDefineParam(fasm, func_node);
+
     fputs("\t\tpush\trbp\n", fasm);
     fputs("\t\tmov\t\trbp, rsp\n", fasm);
 
+    int num_param = 0 ;
+    NumVar(num_param, func_node);
+    if (num_param % 2 == 0)
+    {
+        fprintf(fasm, "\t\tsub\t\trsp, %d", num_param * 8);
+    }
+    else
+    {
+        fprintf(fasm, "\t\tsub\t\trsp, %d", (num_param + 1) * 8);
+    }
+
+
 }
 
-void VerifyFunc(DifferTree& function)
+void PrintDefineParam(FILE* fasm, node_t* node)
+{
+    VerifyFunc(node);
+    char* funcname = NodeName(node);
+
+    if (node->GetLeft())
+    {
+        int offset = NumParam(node) * 8 + 8;
+        node = node->GetLeft();
+        while (node->dType() == DataType::COMMA)
+        {
+            fprintf(fasm, "%%define %s_%s qword [rbp + %d]\n", funcname, NodeName(node->GetRight()), offset);
+            node = node->GetLeft();
+            offset -= 8;
+        }
+        fprintf(fasm, "%%define %s_%s qword [rbp + %d]\n", funcname, NodeName(node), offset);
+    }
+}
+
+int NumParam(node_t* node)
+{
+    int num_param = 0;
+    while (node->GetLeft())
+    {
+        num_param++;
+        node = node->GetLeft();
+    }
+    return num_param;
+}
+
+
+
+void NumVar(int& num_param, node_t* node)
+{    
+    if (node->dType() == DataType::INITIALIZATE)
+    {
+        num_param++;
+        return;
+    }
+    if (node->GetLeft()) NumVar(num_param, node->GetLeft());
+    if (node->GetRight()) NumVar(num_param, node->GetRight());
+}
+
+void VerifyFunc(node_t* node)
+{
+    if (node->dType() != DataType::FUNC)
+    {
+        std::cout << node << "\n";
+        fprintf(stderr, "Error reading function parametrs");
+    }
+}
+
+
+void VerifyDefFunc(DifferTree& function)
 {
     if (function.ShowCurrent()->dType() != DataType::DEFINE)
     {
@@ -85,7 +160,7 @@ void VerifyFunc(DifferTree& function)
     }
 }
 
-inline char* FuncName(DifferTree& function)
+inline char* NodeName(node_t* function)
 {
-    return function.ShowCurrent()->value().string_ptr;
+    return function->value().string_ptr;
 }
