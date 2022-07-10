@@ -42,6 +42,9 @@ void WritePreamble(FILE* fasm, List<DifferTree>& proga)
     PrintConstant(fasm, proga);
     fputs("doublestr: db '\%lg \%lg', 0x0\n", fasm);
 
+    fputs("section .bss\n", fasm);
+    fputs("result: resq 1\n", fasm);
+
     fputs("section .text\n", fasm);
     fputs("\%define ", fasm);
     fputs(MainFuncName(proga), fasm);
@@ -102,7 +105,8 @@ void TreeTranslate(FILE* fasm, DifferTree& function, char* programm_name)
         fputs("\t\tfinit\n", fasm);
     }
 
-    TranslateOpSequence(fasm, func);
+    char* funcname = NodeName(func);
+    TranslateOpSequence(fasm, func->GetRight(), funcname);
 
     PrintEpilog(fasm);
 }
@@ -115,12 +119,8 @@ void PrintEpilog(FILE* fasm)
 }
 
 
-void TranslateOpSequence(FILE* fasm, node_t* node)
+void TranslateOpSequence(FILE* fasm, node_t* node, char* funcname)
 {
-    VerifyFunc(node);
-    char* funcname = NodeName(node);
-    node = node->GetRight();
-
     while (node && (node->dType() == DataType::END_OP))
     {
         TranslateOp(fasm, node->GetLeft(), funcname);
@@ -152,9 +152,45 @@ void TranslateOp(FILE* fasm, node_t* node, char* funcname)
 
 void TranslateIf(FILE* fasm, node_t* node, char* funcname)
 {
+    static int num_if = 0;
 
+    node_t* condition = node->GetLeft();
+    TranslateExp(fasm, condition->GetLeft(), funcname);
+    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
+    TranslateExp(fasm, condition->GetRight(), funcname);
+    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tmovsd\txmm1, qword [result]\n");
+    fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
+    fprintf(fasm, "\t\t%s\t\t.If%dend\n", Jnx(condition), num_if);
+    TranslateOpSequence(fasm, node->GetRight(), funcname);
+    fprintf(fasm, ".If%dend:\n", num_if++);
 }
 
+
+const char* Jnx(node_t* node)
+{
+    char* jxx = nullptr;   
+    switch (node->dType())
+    {
+    case DataType::JE:
+        return "jne";
+    case DataType::JNE:
+        return "je";
+    case DataType::JA:
+        return "jbe";
+    case DataType::JAE:
+        return "jb";
+    case DataType::JB:
+        return "jae";
+    case DataType::JBE:
+        return "ja";
+    default:
+        fprintf(stderr, "Error in condition. Data type isn't condition");
+        break;
+    }
+    return nullptr;
+}
 
 
 void TranslateInit(FILE* fasm, node_t* node, char* funcname)
@@ -199,22 +235,22 @@ void TranslateExp(FILE* fasm, node_t* node, char* funcname)
     case DataType::ADD:
         TranslateExp(fasm, node->GetLeft(), funcname);
         TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfaddp\t\tst1\n");
+        fprintf(fasm, "\t\tfaddp\tst1\n");
         break;
     case DataType::SUB:
         TranslateExp(fasm, node->GetLeft(), funcname);
         TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfsubp\t\tst1\n");
+        fprintf(fasm, "\t\tfsubp\tst1\n");
         break;
     case DataType::MUL:
         TranslateExp(fasm, node->GetLeft(), funcname);
         TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfmulp\t\tst1\n");
+        fprintf(fasm, "\t\tfmulp\tst1\n");
         break;
     case DataType::DIV:
         TranslateExp(fasm, node->GetLeft(), funcname);
         TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfdivp\t\tst1\n");
+        fprintf(fasm, "\t\tfdivp\tst1\n");
         break;
     case DataType::CONSTANT:
         static int num_const = 0;

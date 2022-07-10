@@ -2,19 +2,13 @@ define func()
 {
     var x = 10;
     var y = 5;
-    Translate(x,y);
+    if (x != y)
+    {
+        print(x,y);
+    }
 }
 
-define Translate(x,y)
+define print(x,y)
 {
-    x = 4;
-    y = x + 5;
-    var z = (x * y - 3) / 7;
-    var c = 0;
-    print(x,y,z,c);
-}
-
-define print(x, y, z, c)
-{
-
+    
 }

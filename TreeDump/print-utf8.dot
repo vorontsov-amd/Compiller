@@ -1,19 +1,11 @@
 digraph print{
-Node0x5599159efb70[shape="record", label="Data: define"];
-Node0x5599159f0380[shape="record", label="Data: print"];
-Node0x5599159f0830[shape="record", label="Data: ,"];
-Node0x5599159ef940[shape="record", label="Data: ,"];
-Node0x5599159f04c0[shape="record", label="Data: ,"];
-Node0x5599159ef710[shape="record", label="Data: x"];
-Node0x5599159f04c0->Node0x5599159ef710;
-Node0x5599159ef760[shape="record", label="Data: y"];
-Node0x5599159f04c0->Node0x5599159ef760;
-Node0x5599159ef940->Node0x5599159f04c0;
-Node0x5599159f0790[shape="record", label="Data: z"];
-Node0x5599159ef940->Node0x5599159f0790;
-Node0x5599159f0830->Node0x5599159ef940;
-Node0x5599159ef6c0[shape="record", label="Data: c"];
-Node0x5599159f0830->Node0x5599159ef6c0;
-Node0x5599159f0380->Node0x5599159f0830;
-Node0x5599159efb70->Node0x5599159f0380;
+Node0x55936338b8f0[shape="record", label="Data: define"];
+Node0x55936338b670[shape="record", label="Data: print"];
+Node0x55936338b4e0[shape="record", label="Data: ,"];
+Node0x55936338b580[shape="record", label="Data: x"];
+Node0x55936338b4e0->Node0x55936338b580;
+Node0x55936338b530[shape="record", label="Data: y"];
+Node0x55936338b4e0->Node0x55936338b530;
+Node0x55936338b670->Node0x55936338b4e0;
+Node0x55936338b8f0->Node0x55936338b670;
 }
