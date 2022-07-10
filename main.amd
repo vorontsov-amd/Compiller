@@ -1,12 +1,18 @@
 define func()
 {
-    var x = 10;
+    var x = 0;
     var y = 5;
-    if (x != y)
-    {
-        print(x,y);
-    }
+    f(x,y);
+    print(x,y);
 }
+
+
+define f(x,y)
+{
+    x = 10;
+    y = 100;
+}
+
 
 define print(x,y)
 {

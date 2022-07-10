@@ -2,8 +2,10 @@ global main
 extern printf, scanf
 
 section .data
-const_0: dq 10.000000
+const_0: dq 0.000000
 const_1: dq 5.000000
+const_2: dq 10.000000
+const_3: dq 100.000000
 doublestr: db '%lg %lg', 0x0
 section .bss
 result: resq 1
@@ -21,19 +23,27 @@ func:
 %define func_y qword [rbp - 16]
 		fld		qword [const_1]
 		fstp	func_y
-		fld		func_x
-		fstp	qword [result]
-		movsd	xmm0, qword [result]
-		fld		func_y
-		fstp	qword [result]
-		movsd	xmm1, qword [result]
-		comisd	xmm0, xmm1
-		je		.If0end
+		push	func_y
+		push	func_x
+		call	f
+		add		rsp, 16
 		push	func_y
 		push	func_x
 		call	print
 		add		rsp, 16
-.If0end:
+		leave
+		ret
+
+f:
+%define f_y qword [rbp + 24]
+%define f_x qword [rbp + 16]
+		push	rbp
+		mov		rbp, rsp
+		sub		rsp, 0
+		fld		qword [const_2]
+		fstp	f_x
+		fld		qword [const_3]
+		fstp	f_y
 		leave
 		ret
 

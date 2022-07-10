@@ -28,3 +28,5 @@ void PrintConstant(FILE* fasm, List<DifferTree> proga);
 void SearchConst(FILE* fasm, node_t* node);
 void TranslateIf(FILE* fasm, node_t* node, char* funcname);
 const char* Jnx(node_t* node);
+const char* Jxx(node_t* node);
+void TranslateWhile(FILE* fasm, node_t* node, char* funcname);

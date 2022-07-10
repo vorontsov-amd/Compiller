@@ -144,9 +144,33 @@ void TranslateOp(FILE* fasm, node_t* node, char* funcname)
     case DataType::IF:
         TranslateIf(fasm, node, funcname);
         break;
+    case DataType::WHILE:
+        TranslateWhile(fasm, node, funcname);
+        break;
     default:
         break;
     }
+}
+
+
+void TranslateWhile(FILE* fasm, node_t* node, char* funcname)
+{
+    static int num_while = 0;
+    node_t* condition = node->GetLeft();
+
+    fprintf(fasm, "\t\tjmp\t\t.while%dtest\n", num_while);
+    fprintf(fasm, ".while%dloop:\n", num_while);
+    TranslateOpSequence(fasm, node->GetRight(), funcname);
+
+    fprintf(fasm, ".while%dtest:\n", num_while);
+    TranslateExp(fasm, condition->GetLeft(), funcname);
+    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
+    TranslateExp(fasm, condition->GetRight(), funcname);
+    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tmovsd\txmm1, qword [result]\n");
+    fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
+    fprintf(fasm, "\t\t%s\t\t.while%dloop\n", Jxx(condition), num_while++);
 }
 
 
@@ -162,7 +186,7 @@ void TranslateIf(FILE* fasm, node_t* node, char* funcname)
     fprintf(fasm, "\t\tfstp\tqword [result]\n");
     fprintf(fasm, "\t\tmovsd\txmm1, qword [result]\n");
     fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
-    fprintf(fasm, "\t\t%s\t\t.If%dend\n", Jnx(condition), num_if);
+    fprintf(fasm, "\t\t%s\t\t.if%dend\n", Jnx(condition), num_if);
     TranslateOpSequence(fasm, node->GetRight(), funcname);
     fprintf(fasm, ".If%dend:\n", num_if++);
 }
@@ -191,6 +215,32 @@ const char* Jnx(node_t* node)
     }
     return nullptr;
 }
+
+
+const char* Jxx(node_t* node)
+{
+    char* jxx = nullptr;   
+    switch (node->dType())
+    {
+    case DataType::JE:
+        return "je";
+    case DataType::JNE:
+        return "jne";
+    case DataType::JA:
+        return "ja";
+    case DataType::JAE:
+        return "jae";
+    case DataType::JB:
+        return "jb";
+    case DataType::JBE:
+        return "jbe";
+    default:
+        fprintf(stderr, "Error in condition. Data type isn't condition");
+        break;
+    }
+    return nullptr;
+}
+
 
 
 void TranslateInit(FILE* fasm, node_t* node, char* funcname)
