@@ -40,6 +40,7 @@ namespace DataType
 		JNE,
 		WHILE,
 		IF,
+		ELSE,
 		END_OP,
 		UNKNOWN,
 		INITIALIZATE,

@@ -1,13 +1,14 @@
 define func()
 {
-    var x = 5;
+    var x;
     input(x);
+    if (x == 1)
+    {
+        x = 10;
+    }
+    else if (x == 2)
+    {
+        x = 20;
+    };
     print(x);
-}
-
-define exc(x, y)
-{
-    var t = x;
-    x = y;
-    y = t;
 }

@@ -62,13 +62,13 @@ node_t* GetOperator(List<node_t>& programm)
 	{
 		if (strcmp(programm.ShowFront().value().string_ptr, "while") == 0)
 		{
-			node_t* op = GetIfWhile(programm);
+			node_t* op = GetWhile(programm);
 			op->SetDtype(DataType::WHILE);
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
 		else if (strcmp(programm.ShowFront().value().string_ptr, "if") == 0)
 		{
-			node_t* op = GetIfWhile(programm);
+			node_t* op = GetIf(programm);
 			op->SetDtype(DataType::IF);
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
@@ -268,7 +268,51 @@ void CheckClsShapeBr(List<node_t>& programm)
 }
 
 
-node_t* GetIfWhile(List<node_t>& programm)
+
+node_t* GetIf(List<node_t>& programm)
+{
+	programm.PopFront();
+
+	CheckOpRoundBr(programm);
+	node_t* conditions = GetConditions(programm);
+	CheckClsRoundBr(programm);
+
+	node_t* op_else = GetElse(programm);
+	return new node_t(NodeType::OPERATOR, conditions, op_else);
+}
+
+
+node_t* GetElse(List<node_t>& programm)
+{
+	CheckOpShapeBr(programm);
+	node_t* if_op_sequense = GetOpSequence(programm);
+	CheckClsShapeBr(programm);
+
+	if (strcmp(programm.ShowFront().value().string_ptr, "else") ==0 )
+	{
+		programm.PopFront();
+		node_t* else_op_sequense = nullptr;
+		if (strcmp(programm.ShowFront().value().string_ptr, "if") !=0 )
+		{
+			CheckOpShapeBr(programm);
+			else_op_sequense = GetOpSequence(programm);
+			CheckClsShapeBr(programm);
+		}
+		else
+		{
+			else_op_sequense = GetIf(programm);
+			else_op_sequense->SetDtype(DataType::IF);
+		}
+		return new node_t(NodeType::WORD, DataType::ELSE, "else", if_op_sequense, else_op_sequense);
+	}
+
+	return if_op_sequense;
+}
+
+
+
+
+node_t* GetWhile(List<node_t>& programm)
 {
 	programm.PopFront();
 
