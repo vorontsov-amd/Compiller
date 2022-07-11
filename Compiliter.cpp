@@ -96,7 +96,8 @@ void TranslateProcessing(FILE* fasm, List<DifferTree>& proga, char* programm_nam
 void TreeTranslate(FILE* fasm, DifferTree& function, char* programm_name)
 {
     VerifyDefFunc(function);
-    PrintProlog(fasm, function);
+    List<node_t*>* param = PrintProlog(fasm, function);
+    int offset = param->Size() * 8;
 
     node_t* func = function.ShowCurrent();
 
@@ -106,29 +107,41 @@ void TreeTranslate(FILE* fasm, DifferTree& function, char* programm_name)
     }
 
     char* funcname = NodeName(func);
-    TranslateOpSequence(fasm, func->GetRight(), funcname);
+    TranslateOpSequence(fasm, func->GetRight(), funcname, offset);
 
-    PrintEpilog(fasm);
+    PrintEpilog(fasm, param, funcname);
 }
 
 
-void PrintEpilog(FILE* fasm)
+void PrintEpilog(FILE* fasm, List<node_t*>* param, char* funcname)
 {
+    for (int i = 0, size = param->Size(); i < size; i++)
+    {
+        node_t* var = param->ShowFront();
+        if (var->dType() != DataType::NEW_VAR)
+        {
+            fprintf(fasm, "\t\tmov\t\trax, %s_%s_ptr\n", funcname, NodeName(var));
+            fprintf(fasm, "\t\tmovsd\txmm0, qword %s_%s\n", funcname, NodeName(var));
+            fprintf(fasm, "\t\tmovsd\tqword [rax], xmm0\n");
+        }
+        param->PopFront();
+    }
+
     fputs("\t\tleave\n", fasm);
     fputs("\t\tret\n", fasm);
 }
 
 
-void TranslateOpSequence(FILE* fasm, node_t* node, char* funcname)
+void TranslateOpSequence(FILE* fasm, node_t* node, char* funcname, int offset)
 {
     while (node && (node->dType() == DataType::END_OP))
     {
-        TranslateOp(fasm, node->GetLeft(), funcname);
+        TranslateOp(fasm, node->GetLeft(), funcname, offset);
         node = node->GetRight();
     }
 }
 
-void TranslateOp(FILE* fasm, node_t* node, char* funcname)
+void TranslateOp(FILE* fasm, node_t* node, char* funcname, int offset)
 {
     switch (node->dType())
     {
@@ -139,16 +152,16 @@ void TranslateOp(FILE* fasm, node_t* node, char* funcname)
         TranslateCallPrintf(fasm, node, funcname);
         break;
     case DataType::INITIALIZATE:
-        TranslateInit(fasm, node, funcname);
+        TranslateInit(fasm, node, funcname, offset);
         break;
     case DataType::MOV:
         TranslateMov(fasm, node, funcname);
         break;
     case DataType::IF:
-        TranslateIf(fasm, node, funcname);
+        TranslateIf(fasm, node, funcname, offset);
         break;
     case DataType::WHILE:
-        TranslateWhile(fasm, node, funcname);
+        TranslateWhile(fasm, node, funcname, offset);
         break;
     default:
         break;
@@ -168,7 +181,7 @@ void TranslateCallPrintf(FILE* fasm, node_t* node, char* funcname)
     }
 
     fprintf(fasm, "\t\tmov\t\trdi, print_double\n");
-    fprintf(fasm, "\t\tmovsd\txmm0, %s_%s\n", funcname, NodeName(node));
+    fprintf(fasm, "\t\tmovsd\txmm0, qword %s_%s\n", funcname, NodeName(node));
     fprintf(fasm, "\t\tmov\t\teax, 1\n");
     fprintf(fasm, "\t\tcall\tprintf\n");
 
@@ -176,7 +189,7 @@ void TranslateCallPrintf(FILE* fasm, node_t* node, char* funcname)
     {
         node_t* node = StackNodePtr.ShowBack();
         fprintf(fasm, "\t\tmov\t\trdi, print_double\n");
-        fprintf(fasm, "\t\tmovsd\txmm0, %s_%s\n", funcname, NodeName(node->GetRight()));
+        fprintf(fasm, "\t\tmovsd\txmm0, qword %s_%s\n", funcname, NodeName(node->GetRight()));
         fprintf(fasm, "\t\tmov\t\teax, 1\n");
         fprintf(fasm, "\t\tcall\tprintf\n");
         StackNodePtr.PopBack();
@@ -187,14 +200,14 @@ void TranslateCallPrintf(FILE* fasm, node_t* node, char* funcname)
 }
 
 
-void TranslateWhile(FILE* fasm, node_t* node, char* funcname)
+void TranslateWhile(FILE* fasm, node_t* node, char* funcname, int offset)
 {
     static int num_while = 0;
     node_t* condition = node->GetLeft();
 
     fprintf(fasm, "\t\tjmp\t\t.while%dtest\n", num_while);
     fprintf(fasm, ".while%dloop:\n", num_while);
-    TranslateOpSequence(fasm, node->GetRight(), funcname);
+    TranslateOpSequence(fasm, node->GetRight(), funcname, offset);
 
     fprintf(fasm, ".while%dtest:\n", num_while);
     TranslateExp(fasm, condition->GetLeft(), funcname);
@@ -208,7 +221,7 @@ void TranslateWhile(FILE* fasm, node_t* node, char* funcname)
 }
 
 
-void TranslateIf(FILE* fasm, node_t* node, char* funcname)
+void TranslateIf(FILE* fasm, node_t* node, char* funcname, int offset)
 {
     static int num_if = 0;
 
@@ -221,7 +234,7 @@ void TranslateIf(FILE* fasm, node_t* node, char* funcname)
     fprintf(fasm, "\t\tmovsd\txmm1, qword [result]\n");
     fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
     fprintf(fasm, "\t\t%s\t\t.if%dend\n", Jnx(condition), num_if);
-    TranslateOpSequence(fasm, node->GetRight(), funcname);
+    TranslateOpSequence(fasm, node->GetRight(), funcname, offset);
     fprintf(fasm, ".If%dend:\n", num_if++);
 }
 
@@ -277,24 +290,24 @@ const char* Jxx(node_t* node)
 
 
 
-void TranslateInit(FILE* fasm, node_t* node, char* funcname)
+void TranslateInit(FILE* fasm, node_t* node, char* funcname, int initial_offset)
 {
     node = node->GetRight();
     static char* last_call_func = funcname;
-    static int offset = 8;
+    static int offset = initial_offset + 8;
 
     if (last_call_func != funcname)
     {
-        offset = 8;
+        offset = initial_offset + 8;
     }
     if (node->dType() == DataType::VARIABLE)
     {
-        fprintf(fasm, "%%define %s_%s qword [rbp - %d]\n", funcname, NodeName(node), offset);
+        fprintf(fasm, "%%define %s_%s [rbp - %d]\n", funcname, NodeName(node), offset);
 
     }
     else if (node->dType() == DataType::MOV)
     {
-        fprintf(fasm, "%%define %s_%s qword [rbp - %d]\n", funcname, NodeName(node->GetLeft()), offset);
+        fprintf(fasm, "%%define %s_%s [rbp - %d]\n", funcname, NodeName(node->GetLeft()), offset);
         TranslateMov(fasm, node, funcname);
     }
     offset += 8;
@@ -305,7 +318,7 @@ void TranslateInit(FILE* fasm, node_t* node, char* funcname)
 void TranslateMov(FILE* fasm, node_t* node, char* funcname)
 {
     TranslateExp(fasm, node->GetRight(), funcname);
-    fprintf(fasm, "\t\tfstp\t%s_%s\n", funcname, NodeName(node->GetLeft()));
+    fprintf(fasm, "\t\tfstp\tqword %s_%s\n", funcname, NodeName(node->GetLeft()));
 }
 
 
@@ -314,7 +327,7 @@ void TranslateExp(FILE* fasm, node_t* node, char* funcname)
     switch (node->dType())
     {
     case DataType::VARIABLE:
-        fprintf(fasm, "\t\tfld\t\t%s_%s\n", funcname, NodeName(node));
+        fprintf(fasm, "\t\tfld\t\tqword %s_%s\n", funcname, NodeName(node));
         break;;
     case DataType::ADD:
         TranslateExp(fasm, node->GetLeft(), funcname);
@@ -355,11 +368,13 @@ void TranslateCallFunc(FILE* fasm, node_t* node, char* funcname)
     {
         while (node->dType() == DataType::COMMA)
         {                    
-            fprintf(fasm, "\t\tpush\t%s_%s\n", funcname, NodeName(node->GetRight()));
+            fprintf(fasm, "\t\tlea\t\trax, %s_%s\n", funcname, NodeName(node->GetRight()));
+            fprintf(fasm, "\t\tpush\trax\n");
             node = node->GetLeft();
             number_op++;
         }
-        fprintf(fasm, "\t\tpush\t%s_%s\n", funcname, NodeName(node));
+        fprintf(fasm, "\t\tlea\t\trax, %s_%s\n", funcname, NodeName(node));
+        fprintf(fasm, "\t\tpush\trax\n");
         number_op++;
     }
     fprintf(fasm, "\t\tcall\t%s\n", call_func);
@@ -369,7 +384,7 @@ void TranslateCallFunc(FILE* fasm, node_t* node, char* funcname)
 
 
 
-void PrintProlog(FILE* fasm, DifferTree& function)
+List<node_t*>* PrintProlog(FILE* fasm, DifferTree& function)
 {
     node_t* func_node = function.ShowCurrent();
     
@@ -377,13 +392,14 @@ void PrintProlog(FILE* fasm, DifferTree& function)
     fputs(mark, fasm);
     fputs(":\n", fasm);
     
-    PrintDefineParam(fasm, func_node);
+    List<node_t*>* new_var = PrintDefineParam(fasm, func_node);
 
     fputs("\t\tpush\trbp\n", fasm);
     fputs("\t\tmov\t\trbp, rsp\n", fasm);
 
     int num_param = 0 ;
     NumVar(num_param, func_node);
+    num_param += new_var->Size();
     if (num_param % 2 == 0)
     {
         fprintf(fasm, "\t\tsub\t\trsp, %d\n", num_param * 8);
@@ -392,12 +408,30 @@ void PrintProlog(FILE* fasm, DifferTree& function)
     {
         fprintf(fasm, "\t\tsub\t\trsp, %d\n", (num_param + 1) * 8);
     }
+
+    List<node_t*>* lst = new List<node_t*>(*new_var);
+    for (int i = 0, size = lst->Size(); i < size; i++)
+    {
+        node_t* var = lst->ShowFront();
+        if (var->dType() == DataType::NEW_VAR)
+        {
+            var = var->GetRight();
+        }
+        fprintf(fasm, "\t\tmov\t\trax, %s_%s_ptr\n", mark, NodeName(var));
+        fprintf(fasm, "\t\tmovsd\t\txmm0, qword [rax]\n");
+        fprintf(fasm, "\t\tmovsd\t\t%s_%s, xmm0\n", mark, NodeName(var));
+        lst->PopFront();
+    }
+
+    delete lst;
+    return new_var;
 }
 
-void PrintDefineParam(FILE* fasm, node_t* node)
+List<node_t*>* PrintDefineParam(FILE* fasm, node_t* node)
 {
     VerifyFunc(node);
     char* funcname = NodeName(node);
+    List<node_t*>* new_var = new List<node_t*>;
 
     if (node->GetLeft())
     {
@@ -405,12 +439,27 @@ void PrintDefineParam(FILE* fasm, node_t* node)
         node = node->GetLeft();
         while (node->dType() == DataType::COMMA)
         {
-            fprintf(fasm, "%%define %s_%s qword [rbp + %d]\n", funcname, NodeName(node->GetRight()), offset);
-            node = node->GetLeft();
+            node_t* var = node->GetRight();
+            new_var->PushBack(var);
+            if (var->dType() == DataType::NEW_VAR)
+            {
+                var = var->GetRight();
+            }
+            fprintf(fasm, "%%define %s_%s_ptr [rbp + %d]\n", funcname, NodeName(var), offset);
+            fprintf(fasm, "%%define %s_%s [rbp - %d]\n", funcname, NodeName(var), offset - 8);
             offset -= 8;
+            node = node->GetLeft();
         }
-        fprintf(fasm, "%%define %s_%s qword [rbp + %d]\n", funcname, NodeName(node), offset);
+        new_var->PushBack(node);
+        if (node->dType() == DataType::NEW_VAR)
+        {
+            node = node->GetRight();
+        }
+        fprintf(fasm, "%%define %s_%s_ptr [rbp + %d]\n", funcname, NodeName(node), offset);
+        fprintf(fasm, "%%define %s_%s [rbp - %d]\n", funcname, NodeName(node), offset - 8);
     }
+
+    return new_var;
 }
 
 int NumParam(node_t* node)

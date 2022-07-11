@@ -35,5 +35,6 @@ node_t* GetParamSequence(List<node_t>& programm);
 void CheckValidFunc(List<node_t>& programm);
 void CheckClsShapeBr(List<node_t>& programm);
 void CheckOpShapeBr(List<node_t>& programm);
+node_t* GetNewVar(List<node_t>& programm);
 
 

@@ -49,6 +49,7 @@ namespace DataType
 		SCANF,
 		PRINTF,
 		DEFINE,
+		NEW_VAR,
 	};
 }
 

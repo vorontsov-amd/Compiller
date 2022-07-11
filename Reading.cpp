@@ -139,16 +139,26 @@ node_t* GetFunc(List<node_t>& programm, node_t& func)
 
 node_t* GetParamSequence(List<node_t>& programm)
 {
-	node_t* first_parametr = GetVar(programm);
+	node_t* first_parametr = GetNewVar(programm);
 	while (programm.ShowFront().dType() == DataType::COMMA)
 	{
 		programm.PopFront();
-		node_t* second_parametr = GetVar(programm);
+		node_t* second_parametr = GetNewVar(programm);
 		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
 	}
 	return first_parametr;
 }
 
+
+node_t* GetNewVar(List<node_t>& programm)
+{
+	if ((programm.ShowFront().Type() == NodeType::WORD) && (strcmp(programm.ShowFront().value().string_ptr, "new") == 0))
+	{
+		programm.PopFront();
+		return new node_t(NodeType::WORD, DataType::NEW_VAR, "new", nullptr, GetVar(programm));
+	}
+	else return GetVar(programm);
+}
 
 
 char* Funcname(node_t& func)
