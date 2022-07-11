@@ -41,6 +41,7 @@ void WritePreamble(FILE* fasm, List<DifferTree>& proga)
     fputs("section .data\n", fasm);
     PrintConstant(fasm, proga);
     fputs("print_double: db '\%lg ', 0x0\n", fasm);
+    fputs("scan_double: db '\%lg', 0x0\n", fasm);
 
     fputs("section .bss\n", fasm);
     fputs("result: resq 1\n", fasm);
@@ -154,6 +155,9 @@ void TranslateOp(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
     case DataType::PRINTF:
         TranslateCallPrintf(fasm, node, funcname);
         break;
+    case DataType::SCANF:
+        TranslateCallScanf(fasm, node, funcname);
+        break;
     case DataType::INITIALIZATE:
         TranslateInit(fasm, node, funcname, offset);
         break;
@@ -173,6 +177,40 @@ void TranslateOp(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
         break;
     }
 }
+
+
+
+void TranslateCallScanf(FILE* fasm, node_t* node, char* funcname)
+{
+    node = node->GetRight();
+
+    List<node_t*> StackNodePtr; 
+    while (node && (node->dType() == DataType::COMMA))
+    {
+        StackNodePtr.PushBack(node);
+        node = node->GetLeft();
+    }
+
+    fprintf(fasm, "\t\tmov\t\trdi, scan_double\n");
+    fprintf(fasm, "\t\tlea\t\trsi, %s_%s\n", funcname, NodeName(node));
+    fprintf(fasm, "\t\tmov\t\teax, 1\n");
+    fprintf(fasm, "\t\tcall\tscanf\n");
+
+    for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
+    {
+        node_t* node = StackNodePtr.ShowBack();
+        fprintf(fasm, "\t\tmov\t\trdi, scan_double\n");
+        fprintf(fasm, "\t\tlea\t\trsi, %s_%s\n", funcname, NodeName(node->GetRight()));
+        fprintf(fasm, "\t\tmov\t\teax, 1\n");
+        fprintf(fasm, "\t\tcall\tscanf\n");
+        StackNodePtr.PopBack();
+    }
+}
+
+
+
+
+
 
 
 void TranslateRet(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname)
@@ -440,8 +478,8 @@ List<node_t*>* PrintProlog(FILE* fasm, DifferTree& function)
             var = var->GetRight();
         }
         fprintf(fasm, "\t\tmov\t\trax, %s_%s_ptr\n", mark, NodeName(var));
-        fprintf(fasm, "\t\tmovsd\t\txmm0, qword [rax]\n");
-        fprintf(fasm, "\t\tmovsd\t\t%s_%s, xmm0\n", mark, NodeName(var));
+        fprintf(fasm, "\t\tmovsd\txmm0, qword [rax]\n");
+        fprintf(fasm, "\t\tmovsd\t%s_%s, xmm0\n", mark, NodeName(var));
         lst->PopFront();
     }
 

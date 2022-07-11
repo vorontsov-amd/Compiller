@@ -31,4 +31,5 @@ const char* Jnx(node_t* node);
 const char* Jxx(node_t* node);
 void TranslateWhile(FILE* fasm, List<node_t*>* param,  node_t* node, char* funcname, int offset);
 void TranslateCallPrintf(FILE* fasm, node_t* node, char* funcname);
+void TranslateCallScanf(FILE* fasm, node_t* node, char* funcname);
 void TranslateRet(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname);

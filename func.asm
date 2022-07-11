@@ -3,8 +3,8 @@ extern printf, scanf, putchar
 
 section .data
 const_0: dq 5.000000
-const_1: dq 10.000000
 print_double: db '%lg ', 0x0
+scan_double: db '%lg', 0x0
 section .bss
 result: resq 1
 section .text
@@ -18,24 +18,14 @@ func:
 %define func_x [rbp - 8]
 		fld		qword [const_0]
 		fstp	qword func_x
-%define func_y [rbp - 16]
-		fld		qword [const_1]
-		fstp	qword func_y
-		lea		rax, func_y
-		push	rax
-		lea		rax, func_x
-		push	rax
-		call	exc
-		add		rsp, 16
-		movsd	qword [result], xmm0
-		fld		qword [result]
-		fstp	qword func_y
+		mov		rdi, scan_double
+		lea		rsi, func_x
+		mov		eax, 1
+		call	scanf
+		mov		rdi, 10d
+		call	putchar
 		mov		rdi, print_double
 		movsd	xmm0, qword func_x
-		mov		eax, 1
-		call	printf
-		mov		rdi, print_double
-		movsd	xmm0, qword func_y
 		mov		eax, 1
 		call	printf
 		mov		rdi, 10d
@@ -53,11 +43,11 @@ exc:
 		mov		rbp, rsp
 		sub		rsp, 32
 		mov		rax, exc_y_ptr
-		movsd		xmm0, qword [rax]
-		movsd		exc_y, xmm0
+		movsd	xmm0, qword [rax]
+		movsd	exc_y, xmm0
 		mov		rax, exc_x_ptr
-		movsd		xmm0, qword [rax]
-		movsd		exc_x, xmm0
+		movsd	xmm0, qword [rax]
+		movsd	exc_x, xmm0
 %define exc_t [rbp - 24]
 		fld		qword exc_x
 		fstp	qword exc_t
@@ -65,20 +55,12 @@ exc:
 		fstp	qword exc_x
 		fld		qword exc_t
 		fstp	qword exc_y
-		mov		rdi, print_double
-		movsd	xmm0, qword exc_x
-		mov		eax, 1
-		call	printf
-		mov		rdi, print_double
-		movsd	xmm0, qword exc_y
-		mov		eax, 1
-		call	printf
-		mov		rdi, 10d
-		call	putchar
-		fld		qword exc_y
-		fstp		qword [result]
-		movsd	xmm0, qword [result]
-		jmp		.ret_exc
 .ret_exc:
+		mov		rax, exc_y_ptr
+		movsd	xmm0, qword exc_y
+		movsd	qword [rax], xmm0
+		mov		rax, exc_x_ptr
+		movsd	xmm0, qword exc_x
+		movsd	qword [rax], xmm0
 		leave
 		ret
