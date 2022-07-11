@@ -60,19 +60,23 @@ node_t* GetOperator(List<node_t>& programm)
 {
 	if (programm.ShowFront().Type() == NodeType::WORD)
 	{
-		if(strcmp(programm.ShowFront().value().string_ptr, "while") == 0)
+		if (strcmp(programm.ShowFront().value().string_ptr, "while") == 0)
 		{
 			node_t* op = GetIfWhile(programm);
 			op->SetDtype(DataType::WHILE);
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
-		else if(strcmp(programm.ShowFront().value().string_ptr, "if") == 0)
+		else if (strcmp(programm.ShowFront().value().string_ptr, "if") == 0)
 		{
 			node_t* op = GetIfWhile(programm);
 			op->SetDtype(DataType::IF);
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
-		else if(strcmp(programm.ShowFront().value().string_ptr, "var") == 0)
+		else if (strcmp(programm.ShowFront().value().string_ptr, "return") == 0)
+		{
+			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", GetReturn(programm), nullptr);
+		}
+		else if (strcmp(programm.ShowFront().value().string_ptr, "var") == 0)
 		{
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", GetInit(programm), nullptr);
 		}
@@ -82,6 +86,13 @@ node_t* GetOperator(List<node_t>& programm)
 		}
 	}
 	return nullptr;
+}
+
+
+node_t* GetReturn(List<node_t>& programm)
+{
+	programm.PopFront();
+	return new node_t(NodeType::WORD, DataType::RET, "return", nullptr, GetExpression(programm));
 }
 
 

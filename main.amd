@@ -2,14 +2,15 @@ define func()
 {
     var x = 5;
     var y = 10;
-    exc(x, y);
+    y = exc(x, y);
     print(x,y);
 }
 
-define exc(x, y)
+define exc(new x, new y)
 {
     var t = x;
     x = y;
     y = t;
     print(x,y);
+    return y;
 }

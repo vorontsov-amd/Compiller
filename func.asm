@@ -27,6 +27,9 @@ func:
 		push	rax
 		call	exc
 		add		rsp, 16
+		movsd	qword [result], xmm0
+		fld		qword [result]
+		fstp	qword func_y
 		mov		rdi, print_double
 		movsd	xmm0, qword func_x
 		mov		eax, 1
@@ -37,6 +40,7 @@ func:
 		call	printf
 		mov		rdi, 10d
 		call	putchar
+.ret_func:
 		leave
 		ret
 
@@ -71,11 +75,10 @@ exc:
 		call	printf
 		mov		rdi, 10d
 		call	putchar
-		mov		rax, exc_y_ptr
-		movsd	xmm0, qword exc_y
-		movsd	qword [rax], xmm0
-		mov		rax, exc_x_ptr
-		movsd	xmm0, qword exc_x
-		movsd	qword [rax], xmm0
+		fld		qword exc_y
+		fstp		qword [result]
+		movsd	xmm0, qword [result]
+		jmp		.ret_exc
+.ret_exc:
 		leave
 		ret

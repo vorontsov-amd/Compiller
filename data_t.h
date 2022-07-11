@@ -50,6 +50,7 @@ namespace DataType
 		PRINTF,
 		DEFINE,
 		NEW_VAR,
+		RET,
 	};
 }
 
