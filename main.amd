@@ -2,19 +2,5 @@ define func()
 {
     var x = 0;
     var y = 5;
-    f(x,y);
-    print(x,y);
-}
-
-
-define f(x,y)
-{
-    x = 10;
-    y = 100;
-}
-
-
-define print(x,y)
-{
-    
+    print(x, y);
 }

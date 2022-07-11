@@ -123,7 +123,18 @@ node_t* GetFunc(List<node_t>& programm, node_t& func)
 	node_t* first_parametr = GetParamSequence(programm);
 	CheckClsRoundBr(programm);
 	char* funcname = func.value().string_ptr;
-	return new node_t(NodeType::WORD, DataType::FUNC, funcname, nullptr, first_parametr);
+	if (strcmp(funcname, "input") == 0)
+	{
+		return new node_t(NodeType::WORD, DataType::SCANF, funcname, nullptr, first_parametr);
+	}
+	else if (strcmp(funcname, "print") == 0)
+	{
+		return new node_t(NodeType::WORD, DataType::PRINTF, funcname, nullptr, first_parametr);
+	}
+	else
+	{
+		return new node_t(NodeType::WORD, DataType::FUNC, funcname, nullptr, first_parametr);
+	}
 }
 
 node_t* GetParamSequence(List<node_t>& programm)

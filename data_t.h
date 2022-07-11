@@ -46,6 +46,8 @@ namespace DataType
 		CONSTANT,
 		VARIABLE,
 		FUNC,
+		SCANF,
+		PRINTF,
 		DEFINE,
 	};
 }
