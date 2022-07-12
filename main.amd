@@ -1,14 +1,78 @@
 define func()
 {
-    var x;
-    input(x);
-    if (x == 1)
+    var a = 0;
+    var b = 0;
+    var c = 0;
+    input(a, b, c);
+    var num_sol = NumSol(a, b, c);
+    Solve(a, b, c, num_sol);
+}
+
+
+define Solve(new a, new b, new c, new num_sol)
+{
+    if (num_sol == 2)
     {
-        x = 10;
+        var x1 = 0;
+        var x2 = 0;
+        SolveSquare(a, b, c, x1, x2);
+        print(x1, x2);
     }
-    else if (x == 2)
+    else if (num_sol == 1)
     {
-        x = 20;
+        var x = 0;
+        if (a != 0)
+        {
+            SolveSquare(a, b, c, x, x);
+        }
+        else
+        {
+            SolveLinear(b, c, x);
+        };
+        print(x);
     };
-    print(x);
+}
+
+
+define NumSol(new a, new b, new c)
+{
+    if (a == 0)
+    {
+        return 1;
+    }
+    else
+    {
+        var D = CalcDiscr(a, b, c);
+        if (D < 0)
+        {
+            return 0;
+        }
+        else if (D == 0)
+        {
+            return 1;
+        }
+        else
+        {
+            return 2;
+        };
+    };
+}
+
+define SolveSquare(new a, new b, new c, x1, x2)
+{
+    var D = CalcDiscr(a, b, c);
+    x1 = (-b - sqrt(D)) / (2 * a);
+    x2 = (-b + sqrt(D)) / (2 * a);
+}
+
+define SolveLinear(new a, new b, x)
+{
+    x = -b/a;
+}
+
+
+
+define CalcDiscr(new a, new b, new c)
+{
+    return b * b - 4 * a * c;
 }

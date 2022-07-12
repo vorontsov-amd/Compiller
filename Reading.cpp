@@ -25,7 +25,6 @@ node_t& GetDefFunc(List<node_t>& programm)
 	CheckOpShapeBr(programm);
 	node_t* right = GetOpSequence(programm);
 	CheckClsShapeBr(programm);
-
 	node_t* function = new node_t(NodeType::WORD, DataType::FUNC, func.value().string_ptr, left, right);
 	return *new node_t(NodeType::WORD, DataType::DEFINE, "define", nullptr, function);
 }
@@ -58,7 +57,7 @@ node_t* GetOpSequence(List<node_t>& programm)
 
 node_t* GetOperator(List<node_t>& programm)
 {
-	if (programm.ShowFront().Type() == NodeType::WORD)
+	if (programm.ShowFront().Type() == NodeType::WORD || programm.ShowFront().Type() == NodeType::WORD_WITH_NUMBERS)
 	{
 		if (strcmp(programm.ShowFront().value().string_ptr, "while") == 0)
 		{
@@ -141,6 +140,10 @@ node_t* GetFunc(List<node_t>& programm, node_t& func)
 	else if (strcmp(funcname, "print") == 0)
 	{
 		return new node_t(NodeType::WORD, DataType::PRINTF, funcname, nullptr, first_parametr);
+	}
+	else if (strcmp(funcname, "sqrt") == 0)
+	{
+		return new node_t(NodeType::WORD, DataType::SQRT, funcname, nullptr, first_parametr);
 	}
 	else
 	{

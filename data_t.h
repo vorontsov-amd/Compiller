@@ -49,6 +49,7 @@ namespace DataType
 		FUNC,
 		SCANF,
 		PRINTF,
+		SQRT,
 		DEFINE,
 		NEW_VAR,
 		RET,

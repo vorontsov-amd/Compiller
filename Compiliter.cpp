@@ -158,6 +158,9 @@ void TranslateOp(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
     case DataType::SCANF:
         TranslateCallScanf(fasm, node, funcname);
         break;
+    case DataType::SQRT:
+        TransateCallSqtr(fasm, node, funcname);
+        break;
     case DataType::INITIALIZATE:
         TranslateInit(fasm, node, funcname, offset);
         break;
@@ -176,6 +179,14 @@ void TranslateOp(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
     default:
         break;
     }
+}
+
+
+void TransateCallSqtr(FILE* fasm, node_t* node, char* funcname)
+{
+    node = node->GetRight();
+    TranslateExp(fasm, node, funcname);
+    fprintf(fasm, "\t\tfsqrt\n");
 }
 
 
@@ -280,6 +291,7 @@ void TranslateIf(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
 {
     static int num_if = -1;
     num_if++;
+    int save_num = num_if;
 
     node_t* condition = node->GetLeft();
     TranslateExp(fasm, condition->GetLeft(), funcname);
@@ -292,12 +304,11 @@ void TranslateIf(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
 
     if (node->GetRight()->dType() == DataType::ELSE)
     {
-        fprintf(fasm, "\t\t%s\t\t.if%delse\n", Jnx(condition), num_if);
+        fprintf(fasm, "\t\t%s\t\t.if%delse\n", Jnx(condition), save_num);
         node_t* op_else = node->GetRight();
         TranslateOpSequence(fasm, param, op_else->GetLeft(), funcname, offset);
-        fprintf(fasm, "\t\tjmp\t\t.if%dend\n", num_if);
-        fprintf(fasm, ".if%delse:\n", num_if);
-        int save_num = num_if;
+        fprintf(fasm, "\t\tjmp\t\t.if%dend\n", save_num);
+        fprintf(fasm, ".if%delse:\n", save_num);
         if (op_else->GetRight()->dType() != DataType::IF)
         {
             TranslateOpSequence(fasm, param, op_else->GetRight(), funcname, offset);
@@ -312,7 +323,7 @@ void TranslateIf(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
     {
         fprintf(fasm, "\t\t%s\t\t.if%dend\n", Jnx(condition), num_if);
         TranslateOpSequence(fasm, param, node->GetRight(), funcname, offset);
-        fprintf(fasm, ".if%dend:\n", num_if);
+        fprintf(fasm, ".if%dend:\n", save_num);
     }
 }
 
@@ -413,7 +424,14 @@ void TranslateExp(FILE* fasm, node_t* node, char* funcname)
         fprintf(fasm, "\t\tfaddp\tst1\n");
         break;
     case DataType::SUB:
-        TranslateExp(fasm, node->GetLeft(), funcname);
+        if (node->GetLeft())
+        {
+            TranslateExp(fasm, node->GetLeft(), funcname);
+        }
+        else
+        {
+            fprintf(fasm, "\t\tfldz\n");
+        }
         TranslateExp(fasm, node->GetRight(), funcname);
         fprintf(fasm, "\t\tfsubp\tst1\n");
         break;
@@ -436,6 +454,9 @@ void TranslateExp(FILE* fasm, node_t* node, char* funcname)
         fprintf(fasm, "\t\tmovsd\tqword [result], xmm0\n");
         fprintf(fasm, "\t\tfld\t\tqword [result]\n");
         break;
+    case DataType::SQRT:
+        TransateCallSqtr(fasm, node, funcname);
+        break;   
     default:
         break;
     }
