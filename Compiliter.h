@@ -22,7 +22,7 @@ void TranslateOp(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
 void TranslateCallFunc(FILE* fasm, node_t* node, char* funcname);
 void TranslateInit(FILE* fasm, node_t* node, char* funcname, int offset);
 void TranslateMov(FILE* fasm, node_t* node, char* funcname);
-void TranslateExp(FILE* fasm, node_t* node, char* funcname);
+void TranslateExp(FILE* fasm, node_t* node, char* funcname, bool st_exp = true);
 void PrintEpilog(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname);
 void PrintConstant(FILE* fasm, List<DifferTree> proga);
 void SearchConst(FILE* fasm, node_t* node);
@@ -34,3 +34,5 @@ void TranslateCallPrintf(FILE* fasm, node_t* node, char* funcname);
 void TranslateCallScanf(FILE* fasm, node_t* node, char* funcname);
 void TransateCallSqtr(FILE* fasm, node_t* node, char* funcname);
 void TranslateRet(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname);
+void SaveFPU(FILE* fasm);
+void LoadFPU(FILE* fasm);

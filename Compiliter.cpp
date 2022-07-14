@@ -186,7 +186,12 @@ void TransateCallSqtr(FILE* fasm, node_t* node, char* funcname)
 {
     node = node->GetRight();
     TranslateExp(fasm, node, funcname);
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+    fprintf(fasm, "\t\tfld\tqword [result]\n");
     fprintf(fasm, "\t\tfsqrt\n");
+    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tpush\tqword [result]\n");
+
 }
 
 
@@ -228,7 +233,7 @@ void TranslateRet(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname
 {
     node = node->GetRight();
     TranslateExp(fasm, node, funcname);
-    fprintf(fasm, "\t\tfstp\t\tqword [result]\n");
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
     fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
     fprintf(fasm, "\t\tjmp\t\t.ret_%s\n", funcname);
 }
@@ -277,10 +282,10 @@ void TranslateWhile(FILE* fasm, List<node_t*>* param, node_t* node, char* funcna
 
     fprintf(fasm, ".while%dtest:\n", num_while);
     TranslateExp(fasm, condition->GetLeft(), funcname);
-    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
     fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
     TranslateExp(fasm, condition->GetRight(), funcname);
-    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
     fprintf(fasm, "\t\tmovsd\txmm1, qword [result]\n");
     fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
     fprintf(fasm, "\t\t%s\t\t.while%dloop\n", Jxx(condition), num_while++);
@@ -295,10 +300,10 @@ void TranslateIf(FILE* fasm, List<node_t*>* param, node_t* node, char* funcname,
 
     node_t* condition = node->GetLeft();
     TranslateExp(fasm, condition->GetLeft(), funcname);
-    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
     fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
     TranslateExp(fasm, condition->GetRight(), funcname);
-    fprintf(fasm, "\t\tfstp\tqword [result]\n");
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
     fprintf(fasm, "\t\tmovsd\txmm1, qword [result]\n");
     fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
 
@@ -407,52 +412,82 @@ void TranslateInit(FILE* fasm, node_t* node, char* funcname, int initial_offset)
 void TranslateMov(FILE* fasm, node_t* node, char* funcname)
 {
     TranslateExp(fasm, node->GetRight(), funcname);
-    fprintf(fasm, "\t\tfstp\tqword %s_%s\n", funcname, NodeName(node->GetLeft()));
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+    fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
+    fprintf(fasm, "\t\tmovsd\tqword %s_%s, xmm0\n", funcname, NodeName(node->GetLeft()));
 }
 
 
-void TranslateExp(FILE* fasm, node_t* node, char* funcname)
+void TranslateExp(FILE* fasm, node_t* node, char* funcname, bool st_exp)
 {
+    bool start_expr = st_exp;
+    
     switch (node->dType())
     {
     case DataType::VARIABLE:
-        fprintf(fasm, "\t\tfld\t\tqword %s_%s\n", funcname, NodeName(node));
+        fprintf(fasm, "\t\tpush\tqword %s_%s\n", funcname, NodeName(node));
         break;;
     case DataType::ADD:
-        TranslateExp(fasm, node->GetLeft(), funcname);
-        TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfaddp\tst1\n");
+        TranslateExp(fasm, node->GetLeft(), funcname, false);
+        TranslateExp(fasm, node->GetRight(), funcname, false);
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm1, [result]\n");
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
+        fprintf(fasm, "\t\taddsd\txmm0, xmm1\n");
+        fprintf(fasm, "\t\tmovsd\tqword [result], xmm0\n");
+        fprintf(fasm, "\t\tpush\tqword [result]\n");
         break;
     case DataType::SUB:
         if (node->GetLeft())
         {
-            TranslateExp(fasm, node->GetLeft(), funcname);
+            TranslateExp(fasm, node->GetLeft(), funcname, false);
         }
         else
         {
             fprintf(fasm, "\t\tfldz\n");
+            fprintf(fasm, "\t\tfstp\tqword [result]\n");
+            fprintf(fasm, "\t\tpush\tqword [result]\n");
         }
-        TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfsubp\tst1\n");
+        TranslateExp(fasm, node->GetRight(), funcname, false);
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm1, [result]\n");
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
+        fprintf(fasm, "\t\tsubsd\txmm0, xmm1\n");
+        fprintf(fasm, "\t\tmovsd\tqword [result], xmm0\n");
+        fprintf(fasm, "\t\tpush\tqword [result]\n");
         break;
     case DataType::MUL:
-        TranslateExp(fasm, node->GetLeft(), funcname);
-        TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfmulp\tst1\n");
+        TranslateExp(fasm, node->GetLeft(), funcname, false);
+        TranslateExp(fasm, node->GetRight(), funcname, false);
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm1, qword [result]\n");
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
+        fprintf(fasm, "\t\tmulsd\txmm0, xmm1\n");
+        fprintf(fasm, "\t\tmovsd\tqword [result], xmm0\n");
+        fprintf(fasm, "\t\tpush\tqword [result]\n");
         break;
     case DataType::DIV:
-        TranslateExp(fasm, node->GetLeft(), funcname);
-        TranslateExp(fasm, node->GetRight(), funcname);
-        fprintf(fasm, "\t\tfdivp\tst1\n");
+        TranslateExp(fasm, node->GetLeft(), funcname, false);
+        TranslateExp(fasm, node->GetRight(), funcname, false);
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm1, [result]\n");
+        fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+        fprintf(fasm, "\t\tmovsd\txmm0, qword [result]\n");
+        fprintf(fasm, "\t\tdivsd\txmm0, xmm1\n");
+        fprintf(fasm, "\t\tmovsd\tqword [result], xmm0\n");
+        fprintf(fasm, "\t\tpush\tqword [result]\n");
         break;
     case DataType::CONSTANT:
         static int num_const = 0;
-        fprintf(fasm, "\t\tfld\t\tqword [const_%d]\n", num_const++);
+        fprintf(fasm, "\t\tpush\tqword [const_%d]\n", num_const++);
         break;
     case DataType::FUNC:
         TranslateCallFunc(fasm, node, funcname);
         fprintf(fasm, "\t\tmovsd\tqword [result], xmm0\n");
-        fprintf(fasm, "\t\tfld\t\tqword [result]\n");
+        fprintf(fasm, "\t\tpush\tqword [result]\n");
         break;
     case DataType::SQRT:
         TransateCallSqtr(fasm, node, funcname);
@@ -483,6 +518,20 @@ void TranslateCallFunc(FILE* fasm, node_t* node, char* funcname)
     }
     fprintf(fasm, "\t\tcall\t%s\n", call_func);
     fprintf(fasm, "\t\tadd\t\trsp, %d\n", number_op * 8);
+}
+
+
+void SaveFPU(FILE* fasm)
+{
+    fprintf(fasm, "\t\tfstp\t\tqword [result]\n");
+    fprintf(fasm, "\t\tpush\tqword [result]\n");
+}
+
+
+void LoadFPU(FILE* fasm)
+{
+    fprintf(fasm, "\t\tpop\t\tqword [result]\n");
+    fprintf(fasm, "\t\tfld\t\tqword [result]\n");
 }
 
 
