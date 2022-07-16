@@ -232,6 +232,11 @@ public:
 		return right;
 	}
 
+	const char* Name()
+	{
+		return data.value.string_ptr;
+	}
+
 protected:
 	data_t data;
 	NodeType::nodeType type;

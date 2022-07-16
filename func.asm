@@ -44,20 +44,17 @@ func:
 		mov		rbp, rsp
 		sub		rsp, 32
 		finit
-%define func_x [rbp - 8]
 		mov		rdi, scan_double
-		lea		rsi, func_x
+		lea		rsi, [rbp - 8]
 		mov		eax, 1
 		call	scanf
-%define func_i [rbp - 16]
 		push	qword [const_0]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword func_i, xmm0
+		movsd	qword [rbp - 16], xmm0
 		jmp		.while0test
 .while0loop:
-%define func_t [rbp - 24]
-		lea		rax, func_i
+		lea		rax, [rbp - 16]
 		push	rax
 		call	fib
 		add		rsp, 8
@@ -65,14 +62,14 @@ func:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword func_t, xmm0
+		movsd	qword [rbp - 24], xmm0
 		mov		rdi, print_double
-		movsd	xmm0, qword func_t
+		movsd	xmm0, qword [rbp - 24]
 		mov		eax, 1
 		call	printf
 		mov		rdi, 10d
 		call	putchar
-		push	qword func_i
+		push	qword [rbp - 16]
 		push	qword [const_1]
 		pop		qword [result]
 		movsd	xmm1, [result]
@@ -83,12 +80,12 @@ func:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword func_i, xmm0
+		movsd	qword [rbp - 16], xmm0
 .while0test:
-		push	qword func_i
+		push	qword [rbp - 16]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		push	qword func_x
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm1, qword [result]
 		comisd	xmm0, xmm1
@@ -98,15 +95,13 @@ func:
 		ret
 
 fuck:
-%define fuck_x_ptr [rbp + 16]
-%define fuck_x [rbp - 8]
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 16
-		mov		rax, fuck_x_ptr
+		mov		rax, [rbp + 16]
 		movsd	xmm0, qword [rax]
-		movsd	fuck_x, xmm0
-		push	qword fuck_x
+		movsd	[rbp - 8], xmm0
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_2]
@@ -120,8 +115,7 @@ fuck:
 		jmp		.ret_fuck
 		jmp		.if0end
 .if0else:
-%define fuck_t [rbp - 16]
-		push	qword fuck_x
+		push	qword [rbp - 8]
 		push	qword [const_4]
 		pop		qword [result]
 		movsd	xmm1, [result]
@@ -132,9 +126,9 @@ fuck:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword fuck_t, xmm0
-		push	qword fuck_x
-		lea		rax, fuck_t
+		movsd	qword [rbp - 16], xmm0
+		push	qword [rbp - 8]
+		lea		rax, [rbp - 16]
 		push	rax
 		call	fuck
 		add		rsp, 8
@@ -156,15 +150,13 @@ fuck:
 		ret
 
 fib:
-%define fib_x_ptr [rbp + 16]
-%define fib_x [rbp - 8]
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 32
-		mov		rax, fib_x_ptr
+		mov		rax, [rbp + 16]
 		movsd	xmm0, qword [rax]
-		movsd	fib_x, xmm0
-		push	qword fib_x
+		movsd	[rbp - 8], xmm0
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_5]
@@ -178,7 +170,7 @@ fib:
 		jmp		.ret_fib
 		jmp		.if1end
 .if1else:
-		push	qword fib_x
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_7]
@@ -192,8 +184,7 @@ fib:
 		jmp		.ret_fib
 		jmp		.if2end
 .if2else:
-%define fib_x1 [rbp - 16]
-		push	qword fib_x
+		push	qword [rbp - 8]
 		push	qword [const_9]
 		pop		qword [result]
 		movsd	xmm1, [result]
@@ -204,9 +195,8 @@ fib:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword fib_x1, xmm0
-%define fib_x2 [rbp - 24]
-		push	qword fib_x
+		movsd	qword [rbp - 16], xmm0
+		push	qword [rbp - 8]
 		push	qword [const_10]
 		pop		qword [result]
 		movsd	xmm1, [result]
@@ -217,14 +207,14 @@ fib:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword fib_x2, xmm0
-		lea		rax, fib_x2
+		movsd	qword [rbp - 24], xmm0
+		lea		rax, [rbp - 24]
 		push	rax
 		call	fib
 		add		rsp, 8
 		movsd	qword [result], xmm0
 		push	qword [result]
-		lea		rax, fib_x1
+		lea		rax, [rbp - 16]
 		push	rax
 		call	fib
 		add		rsp, 8
@@ -250,39 +240,35 @@ func1:
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 32
-%define func1_a [rbp - 8]
 		push	qword [const_11]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword func1_a, xmm0
-%define func1_b [rbp - 16]
+		movsd	qword [rbp - 8], xmm0
 		push	qword [const_12]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword func1_b, xmm0
-%define func1_c [rbp - 24]
+		movsd	qword [rbp - 16], xmm0
 		push	qword [const_13]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword func1_c, xmm0
+		movsd	qword [rbp - 24], xmm0
 		mov		rdi, scan_double
-		lea		rsi, func1_a
+		lea		rsi, [rbp - 8]
 		mov		eax, 1
 		call	scanf
 		mov		rdi, scan_double
-		lea		rsi, func1_b
+		lea		rsi, [rbp - 16]
 		mov		eax, 1
 		call	scanf
 		mov		rdi, scan_double
-		lea		rsi, func1_c
+		lea		rsi, [rbp - 24]
 		mov		eax, 1
 		call	scanf
-%define func1_num_sol [rbp - 32]
-		lea		rax, func1_c
+		lea		rax, [rbp - 24]
 		push	rax
-		lea		rax, func1_b
+		lea		rax, [rbp - 16]
 		push	rax
-		lea		rax, func1_a
+		lea		rax, [rbp - 8]
 		push	rax
 		call	NumSol
 		add		rsp, 24
@@ -290,14 +276,14 @@ func1:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword func1_num_sol, xmm0
-		lea		rax, func1_num_sol
+		movsd	qword [rbp - 32], xmm0
+		lea		rax, [rbp - 32]
 		push	rax
-		lea		rax, func1_c
+		lea		rax, [rbp - 24]
 		push	rax
-		lea		rax, func1_b
+		lea		rax, [rbp - 16]
 		push	rax
-		lea		rax, func1_a
+		lea		rax, [rbp - 8]
 		push	rax
 		call	Solve
 		add		rsp, 32
@@ -306,30 +292,22 @@ func1:
 		ret
 
 Solve:
-%define Solve_num_sol_ptr [rbp + 40]
-%define Solve_num_sol [rbp - 32]
-%define Solve_c_ptr [rbp + 32]
-%define Solve_c [rbp - 24]
-%define Solve_b_ptr [rbp + 24]
-%define Solve_b [rbp - 16]
-%define Solve_a_ptr [rbp + 16]
-%define Solve_a [rbp - 8]
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 64
-		mov		rax, Solve_num_sol_ptr
+		mov		rax, [rbp + 40]
 		movsd	xmm0, qword [rax]
-		movsd	Solve_num_sol, xmm0
-		mov		rax, Solve_c_ptr
+		movsd	[rbp - 32], xmm0
+		mov		rax, [rbp + 32]
 		movsd	xmm0, qword [rax]
-		movsd	Solve_c, xmm0
-		mov		rax, Solve_b_ptr
+		movsd	[rbp - 24], xmm0
+		mov		rax, [rbp + 24]
 		movsd	xmm0, qword [rax]
-		movsd	Solve_b, xmm0
-		mov		rax, Solve_a_ptr
+		movsd	[rbp - 16], xmm0
+		mov		rax, [rbp + 16]
 		movsd	xmm0, qword [rax]
-		movsd	Solve_a, xmm0
-		push	qword Solve_num_sol
+		movsd	[rbp - 8], xmm0
+		push	qword [rbp - 32]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_14]
@@ -337,41 +315,39 @@ Solve:
 		movsd	xmm1, qword [result]
 		comisd	xmm0, xmm1
 		jne		.if3else
-%define Solve_x1 [rbp - 40]
 		push	qword [const_15]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword Solve_x1, xmm0
-%define Solve_x2 [rbp - 48]
+		movsd	qword [rbp - 40], xmm0
 		push	qword [const_16]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword Solve_x2, xmm0
-		lea		rax, Solve_x2
+		movsd	qword [rbp - 48], xmm0
+		lea		rax, [rbp - 48]
 		push	rax
-		lea		rax, Solve_x1
+		lea		rax, [rbp - 40]
 		push	rax
-		lea		rax, Solve_c
+		lea		rax, [rbp - 24]
 		push	rax
-		lea		rax, Solve_b
+		lea		rax, [rbp - 16]
 		push	rax
-		lea		rax, Solve_a
+		lea		rax, [rbp - 8]
 		push	rax
 		call	SolveSquare
 		add		rsp, 40
 		mov		rdi, print_double
-		movsd	xmm0, qword Solve_x1
+		movsd	xmm0, qword [rbp - 40]
 		mov		eax, 1
 		call	printf
 		mov		rdi, print_double
-		movsd	xmm0, qword Solve_x2
+		movsd	xmm0, qword [rbp - 48]
 		mov		eax, 1
 		call	printf
 		mov		rdi, 10d
 		call	putchar
 		jmp		.if3end
 .if3else:
-		push	qword Solve_num_sol
+		push	qword [rbp - 32]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_17]
@@ -379,12 +355,11 @@ Solve:
 		movsd	xmm1, qword [result]
 		comisd	xmm0, xmm1
 		jne		.if4end
-%define Solve_x [rbp - 56]
 		push	qword [const_18]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword Solve_x, xmm0
-		push	qword Solve_a
+		movsd	qword [rbp - 56], xmm0
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_19]
@@ -392,31 +367,31 @@ Solve:
 		movsd	xmm1, qword [result]
 		comisd	xmm0, xmm1
 		je		.if5else
-		lea		rax, Solve_x
+		lea		rax, [rbp - 56]
 		push	rax
-		lea		rax, Solve_x
+		lea		rax, [rbp - 56]
 		push	rax
-		lea		rax, Solve_c
+		lea		rax, [rbp - 24]
 		push	rax
-		lea		rax, Solve_b
+		lea		rax, [rbp - 16]
 		push	rax
-		lea		rax, Solve_a
+		lea		rax, [rbp - 8]
 		push	rax
 		call	SolveSquare
 		add		rsp, 40
 		jmp		.if5end
 .if5else:
-		lea		rax, Solve_x
+		lea		rax, [rbp - 56]
 		push	rax
-		lea		rax, Solve_c
+		lea		rax, [rbp - 24]
 		push	rax
-		lea		rax, Solve_b
+		lea		rax, [rbp - 16]
 		push	rax
 		call	SolveLinear
 		add		rsp, 24
 .if5end:
 		mov		rdi, print_double
-		movsd	xmm0, qword Solve_x
+		movsd	xmm0, qword [rbp - 56]
 		mov		eax, 1
 		call	printf
 		mov		rdi, 10d
@@ -428,25 +403,19 @@ Solve:
 		ret
 
 NumSol:
-%define NumSol_c_ptr [rbp + 32]
-%define NumSol_c [rbp - 24]
-%define NumSol_b_ptr [rbp + 24]
-%define NumSol_b [rbp - 16]
-%define NumSol_a_ptr [rbp + 16]
-%define NumSol_a [rbp - 8]
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 32
-		mov		rax, NumSol_c_ptr
+		mov		rax, [rbp + 32]
 		movsd	xmm0, qword [rax]
-		movsd	NumSol_c, xmm0
-		mov		rax, NumSol_b_ptr
+		movsd	[rbp - 24], xmm0
+		mov		rax, [rbp + 24]
 		movsd	xmm0, qword [rax]
-		movsd	NumSol_b, xmm0
-		mov		rax, NumSol_a_ptr
+		movsd	[rbp - 16], xmm0
+		mov		rax, [rbp + 16]
 		movsd	xmm0, qword [rax]
-		movsd	NumSol_a, xmm0
-		push	qword NumSol_a
+		movsd	[rbp - 8], xmm0
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_20]
@@ -460,12 +429,11 @@ NumSol:
 		jmp		.ret_NumSol
 		jmp		.if6end
 .if6else:
-%define NumSol_D [rbp - 32]
-		lea		rax, NumSol_c
+		lea		rax, [rbp - 24]
 		push	rax
-		lea		rax, NumSol_b
+		lea		rax, [rbp - 16]
 		push	rax
-		lea		rax, NumSol_a
+		lea		rax, [rbp - 8]
 		push	rax
 		call	CalcDiscr
 		add		rsp, 24
@@ -473,8 +441,8 @@ NumSol:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword NumSol_D, xmm0
-		push	qword NumSol_D
+		movsd	qword [rbp - 32], xmm0
+		push	qword [rbp - 32]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_22]
@@ -488,7 +456,7 @@ NumSol:
 		jmp		.ret_NumSol
 		jmp		.if7end
 .if7else:
-		push	qword NumSol_D
+		push	qword [rbp - 32]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
 		push	qword [const_24]
@@ -514,40 +482,29 @@ NumSol:
 		ret
 
 SolveSquare:
-%define SolveSquare_x2_ptr [rbp + 48]
-%define SolveSquare_x2 [rbp - 40]
-%define SolveSquare_x1_ptr [rbp + 40]
-%define SolveSquare_x1 [rbp - 32]
-%define SolveSquare_c_ptr [rbp + 32]
-%define SolveSquare_c [rbp - 24]
-%define SolveSquare_b_ptr [rbp + 24]
-%define SolveSquare_b [rbp - 16]
-%define SolveSquare_a_ptr [rbp + 16]
-%define SolveSquare_a [rbp - 8]
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 48
-		mov		rax, SolveSquare_x2_ptr
+		mov		rax, [rbp + 48]
 		movsd	xmm0, qword [rax]
-		movsd	SolveSquare_x2, xmm0
-		mov		rax, SolveSquare_x1_ptr
+		movsd	[rbp - 40], xmm0
+		mov		rax, [rbp + 40]
 		movsd	xmm0, qword [rax]
-		movsd	SolveSquare_x1, xmm0
-		mov		rax, SolveSquare_c_ptr
+		movsd	[rbp - 32], xmm0
+		mov		rax, [rbp + 32]
 		movsd	xmm0, qword [rax]
-		movsd	SolveSquare_c, xmm0
-		mov		rax, SolveSquare_b_ptr
+		movsd	[rbp - 24], xmm0
+		mov		rax, [rbp + 24]
 		movsd	xmm0, qword [rax]
-		movsd	SolveSquare_b, xmm0
-		mov		rax, SolveSquare_a_ptr
+		movsd	[rbp - 16], xmm0
+		mov		rax, [rbp + 16]
 		movsd	xmm0, qword [rax]
-		movsd	SolveSquare_a, xmm0
-%define SolveSquare_D [rbp - 48]
-		lea		rax, SolveSquare_c
+		movsd	[rbp - 8], xmm0
+		lea		rax, [rbp - 24]
 		push	rax
-		lea		rax, SolveSquare_b
+		lea		rax, [rbp - 16]
 		push	rax
-		lea		rax, SolveSquare_a
+		lea		rax, [rbp - 8]
 		push	rax
 		call	CalcDiscr
 		add		rsp, 24
@@ -555,11 +512,11 @@ SolveSquare:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword SolveSquare_D, xmm0
+		movsd	qword [rbp - 48], xmm0
 		fldz
 		fstp	qword [result]
 		push	qword [result]
-		push	qword SolveSquare_b
+		push	qword [rbp - 16]
 		pop		qword [result]
 		movsd	xmm1, [result]
 		pop		qword [result]
@@ -567,7 +524,7 @@ SolveSquare:
 		subsd	xmm0, xmm1
 		movsd	qword [result], xmm0
 		push	qword [result]
-		push	qword SolveSquare_D
+		push	qword [rbp - 48]
 		pop		qword [result]
 		fld	qword [result]
 		fsqrt
@@ -581,7 +538,7 @@ SolveSquare:
 		movsd	qword [result], xmm0
 		push	qword [result]
 		push	qword [const_27]
-		push	qword SolveSquare_a
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm1, qword [result]
 		pop		qword [result]
@@ -598,11 +555,11 @@ SolveSquare:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword SolveSquare_x1, xmm0
+		movsd	qword [rbp - 32], xmm0
 		fldz
 		fstp	qword [result]
 		push	qword [result]
-		push	qword SolveSquare_b
+		push	qword [rbp - 16]
 		pop		qword [result]
 		movsd	xmm1, [result]
 		pop		qword [result]
@@ -610,7 +567,7 @@ SolveSquare:
 		subsd	xmm0, xmm1
 		movsd	qword [result], xmm0
 		push	qword [result]
-		push	qword SolveSquare_D
+		push	qword [rbp - 48]
 		pop		qword [result]
 		fld	qword [result]
 		fsqrt
@@ -624,7 +581,7 @@ SolveSquare:
 		movsd	qword [result], xmm0
 		push	qword [result]
 		push	qword [const_28]
-		push	qword SolveSquare_a
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm1, qword [result]
 		pop		qword [result]
@@ -641,41 +598,35 @@ SolveSquare:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword SolveSquare_x2, xmm0
+		movsd	qword [rbp - 40], xmm0
 .ret_SolveSquare:
-		mov		rax, SolveSquare_x2_ptr
-		movsd	xmm0, qword SolveSquare_x2
+		mov		rax, [rbp + 48]
+		movsd	xmm0, qword [rbp - 40]
 		movsd	qword [rax], xmm0
-		mov		rax, SolveSquare_x1_ptr
-		movsd	xmm0, qword SolveSquare_x1
+		mov		rax, [rbp + 40]
+		movsd	xmm0, qword [rbp - 32]
 		movsd	qword [rax], xmm0
 		leave
 		ret
 
 SolveLinear:
-%define SolveLinear_x_ptr [rbp + 32]
-%define SolveLinear_x [rbp - 24]
-%define SolveLinear_b_ptr [rbp + 24]
-%define SolveLinear_b [rbp - 16]
-%define SolveLinear_a_ptr [rbp + 16]
-%define SolveLinear_a [rbp - 8]
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 32
-		mov		rax, SolveLinear_x_ptr
+		mov		rax, [rbp + 32]
 		movsd	xmm0, qword [rax]
-		movsd	SolveLinear_x, xmm0
-		mov		rax, SolveLinear_b_ptr
+		movsd	[rbp - 24], xmm0
+		mov		rax, [rbp + 24]
 		movsd	xmm0, qword [rax]
-		movsd	SolveLinear_b, xmm0
-		mov		rax, SolveLinear_a_ptr
+		movsd	[rbp - 16], xmm0
+		mov		rax, [rbp + 16]
 		movsd	xmm0, qword [rax]
-		movsd	SolveLinear_a, xmm0
+		movsd	[rbp - 8], xmm0
 		fldz
 		fstp	qword [result]
 		push	qword [result]
-		push	qword SolveLinear_b
-		push	qword SolveLinear_a
+		push	qword [rbp - 16]
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm1, [result]
 		pop		qword [result]
@@ -692,35 +643,29 @@ SolveLinear:
 		push	qword [result]
 		pop		qword [result]
 		movsd	xmm0, qword [result]
-		movsd	qword SolveLinear_x, xmm0
+		movsd	qword [rbp - 24], xmm0
 .ret_SolveLinear:
-		mov		rax, SolveLinear_x_ptr
-		movsd	xmm0, qword SolveLinear_x
+		mov		rax, [rbp + 32]
+		movsd	xmm0, qword [rbp - 24]
 		movsd	qword [rax], xmm0
 		leave
 		ret
 
 CalcDiscr:
-%define CalcDiscr_c_ptr [rbp + 32]
-%define CalcDiscr_c [rbp - 24]
-%define CalcDiscr_b_ptr [rbp + 24]
-%define CalcDiscr_b [rbp - 16]
-%define CalcDiscr_a_ptr [rbp + 16]
-%define CalcDiscr_a [rbp - 8]
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 32
-		mov		rax, CalcDiscr_c_ptr
+		mov		rax, [rbp + 32]
 		movsd	xmm0, qword [rax]
-		movsd	CalcDiscr_c, xmm0
-		mov		rax, CalcDiscr_b_ptr
+		movsd	[rbp - 24], xmm0
+		mov		rax, [rbp + 24]
 		movsd	xmm0, qword [rax]
-		movsd	CalcDiscr_b, xmm0
-		mov		rax, CalcDiscr_a_ptr
+		movsd	[rbp - 16], xmm0
+		mov		rax, [rbp + 16]
 		movsd	xmm0, qword [rax]
-		movsd	CalcDiscr_a, xmm0
-		push	qword CalcDiscr_b
-		push	qword CalcDiscr_b
+		movsd	[rbp - 8], xmm0
+		push	qword [rbp - 16]
+		push	qword [rbp - 16]
 		pop		qword [result]
 		movsd	xmm1, qword [result]
 		pop		qword [result]
@@ -729,7 +674,7 @@ CalcDiscr:
 		movsd	qword [result], xmm0
 		push	qword [result]
 		push	qword [const_29]
-		push	qword CalcDiscr_a
+		push	qword [rbp - 8]
 		pop		qword [result]
 		movsd	xmm1, qword [result]
 		pop		qword [result]
@@ -737,7 +682,7 @@ CalcDiscr:
 		mulsd	xmm0, xmm1
 		movsd	qword [result], xmm0
 		push	qword [result]
-		push	qword CalcDiscr_c
+		push	qword [rbp - 24]
 		pop		qword [result]
 		movsd	xmm1, qword [result]
 		pop		qword [result]
