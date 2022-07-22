@@ -3,3 +3,6 @@
 main
 .vscode
 out
+func
+*.txt
+*.bak
