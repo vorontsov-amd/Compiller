@@ -40,7 +40,7 @@ void TranslateIf(FILE* fasm, List<variable>* param, node_t* node, const char* fu
 const char* Jnx(node_t* node);
 const char* Jxx(node_t* node);
 void TranslateWhile(FILE* fasm, List<variable>* param,  node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code);
-void TranslateCallPrintf(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, ByteArray& machine_code);
+void TranslateCallPrintf(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, ByteArray& machine_code);
 void TransateCallSqtr(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void TranslateRet(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_codee);
@@ -48,6 +48,15 @@ uint64_t OffsetVariable(List<variable>* lst, node_t* var_ptr);
 void WriteELFHeader(Stubs& stubs, ByteArray& machine_code);
 void Test(ByteArray& machine_code);
 void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteArray& machine_code);
+void WriteStdFunctions(Stubs& stubs, ByteArray& machine_code);
+void WritePow(Stubs& stubs, ByteArray& machine_code);
+void WriteLog10(Stubs& stubs, ByteArray& machine_code);
+void WriteIsNan(Stubs& stubs, ByteArray& machine_code);
+void WriteIsInf(Stubs& stubs, ByteArray& machine_code);
+void WriteStrlen(Stubs& stubs, ByteArray& machine_code);
+void WriteFloor(Stubs& stubs, ByteArray& machine_code);
+void WriteDtoa(Stubs& stubs, ByteArray& machine_code);
+
 
 
 

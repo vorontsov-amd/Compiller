@@ -62,6 +62,11 @@ namespace CMD
     cmd_t MOV_RAX_60 = 0x48c7c03c000000;
     cmd_t XOR_RDI_RDI = 0x4831ff;
     cmd_t SYSCALL = 0x0f05;
+    cmd_t MOV_RDI_NUM = 0x48c7c7;
+    cmd_t MOV_RSI_NUM = 0x48c7c6;
+    cmd_t MOV_RDX_RAX = 0x4889c2;
+    cmd_t MOV_RDI_1 = 0x48c7c701000000;
+    cmd_t MOV_RAX_1 = 0x48c7c001000000;
     
     correct_t CALL_CORRECT = -0x5;
 };
@@ -69,7 +74,7 @@ namespace CMD
 
 
 
-void memreverse(void* begin, size_t size);
+void* memreverse(void* begin, size_t size);
 
 
 class ByteArray
@@ -89,8 +94,10 @@ public:
     index_t Append(const Elf64_Phdr phdr);
     index_t Append(const uint32_t ch);
     index_t Append(const double num);
+    index_t Append(const char* func, size_t len);
     //index_t Append(const uint64_t num);
-    template <typename T> index_t Append(const T cmd, size_t size); 
+    template <typename T> index_t Append(const T cmd, size_t size);
+    index_t AppendBin(const uint8_t* cmd, size_t size);
 
 
     const char* ByteCode() const;
@@ -115,6 +122,7 @@ template <typename T> index_t ByteArray::Append(const T cmd, size_t size)
     cur_index += size;
     return cur_index;
 }
+
 
 
 class Label
@@ -162,6 +170,13 @@ struct Stubs
 {
     List<Label> labels;
     EhdrStubs ElfStubs;
+    addr_t pow_addres;
+    addr_t log10_adderes;
+    addr_t isnan_addres;
+    addr_t isinf_addres;
+    addr_t strlen_addres;
+    addr_t floor_addres;
+    addr_t dtoa_addres;
     bool is_loading = true;
     bool rewind_if = false;
     bool rewind_const = false;
@@ -185,3 +200,5 @@ void AppendMovsdVarXmm0(uint32_t number, ByteArray& machine_code);
 void AppendMovsdXmm0Var(uint32_t number, ByteArray& machine_code);
 void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code);
 void AppendPushVar(uint32_t number, ByteArray& machine_code);
+void AppendMovRdiStr(Stubs& stubs, ByteArray& machone_code);
+void AppendMovRsiStr(Stubs& stubs, ByteArray& machone_code);

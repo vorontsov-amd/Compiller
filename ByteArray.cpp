@@ -107,6 +107,19 @@ index_t ByteArray::Append(const addr_t num)
 }
 
 
+index_t ByteArray::AppendBin(const uint8_t* func, size_t len)
+{    
+    if (cur_index + len >= size - 1)
+    {
+        array = (char*)realloc(array, 2 * size);
+        size = 2 * size;
+    }
+    LOX
+
+    memcpy(array + cur_index, func, len);
+    cur_index += len;
+    return cur_index;
+}
 
 
 const char* ByteArray::ByteCode() const
@@ -306,6 +319,27 @@ void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code)
     }
 }
 
+void AppendMovRdiStr(Stubs& stubs, ByteArray& machone_code)
+{
+    uint32_t addr = stubs.ElfStubs.data_stubs.p_vaddp + 8;
+    uint64_t cmd = CMD::MOV_RDI_NUM;
+
+    machone_code.Append(cmd, 3);
+    machone_code.Append(addr);
+
+}
+
+
+void AppendMovRsiStr(Stubs& stubs, ByteArray& machone_code)
+{
+    uint32_t addr = stubs.ElfStubs.data_stubs.p_vaddp + 8;
+    uint64_t cmd = CMD::MOV_RSI_NUM;
+
+    machone_code.Append(cmd, 3);
+    machone_code.Append(addr);
+
+}
+
 
 void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code)
 {
@@ -434,7 +468,7 @@ Label SearchLabel(const char* funcname, List<Label> lst)
 }
 
 
-void memreverse(void* begin, size_t size)
+void* memreverse(void* begin, size_t size)
 {
     char temp = 0;
     char* left = (char*)begin;
@@ -445,6 +479,7 @@ void memreverse(void* begin, size_t size)
         *left = *right;
         *right = temp;
     }
+    return begin;
 }
 
 

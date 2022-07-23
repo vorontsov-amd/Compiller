@@ -13,6 +13,8 @@ void TranslateToAsm(List<DifferTree>& proga)
     WritePreamble(fasm, proga, stubs, machine_code);
     //Test(machine_code);
     TranslateProcessing(fasm, proga, stubs, machine_code);
+    LOX
+    LOX
 
     stubs.is_loading = false;
     stubs.rewind_const = true;
@@ -21,10 +23,14 @@ void TranslateToAsm(List<DifferTree>& proga)
     rewind(fasm);
     machine_code.Rewind();
 
+    LOX
+
     WriteELFHeader(stubs, machine_code);
     WritePreamble(fasm, proga, stubs, machine_code);
     //Test(machine_code);
     TranslateProcessing(fasm, proga, stubs, machine_code);
+
+    LOX
 
     FILE* out = fopen("out", "wb");    
     fwrite(machine_code.ByteCode(), 1, machine_code.Size(), out);
@@ -202,6 +208,8 @@ void PreambleData(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& 
     }
     fputs("buffer: dq 0.0\n", fasm);
     machine_code.Append(0.0);
+    fputs("str: dd 0\n", fasm);
+    machine_code.Append(0U);
 }
 
 void WriteConstant(FILE* fasm, List<DifferTree> proga, Stubs& stubs, ByteArray& machine_code)
@@ -281,7 +289,10 @@ void TranslateProcessing(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, Byte
         lst.PopFront();
     }
 
+    WriteStdFunctions(stubs, machine_code);
+
     uint64_t end_text = machine_code.Size();
+
     if (stubs.is_loading)
     {
         stubs.ElfStubs.text_stubs.p_size = end_text - begin_text;
@@ -504,7 +515,7 @@ void TranslateOp(FILE* fasm, List<variable>* param, node_t* node, const char* fu
         TranslateCallFunc(fasm, param, node, funcname, stubs, machine_code);
         break;
     case DataType::PRINTF:
-        TranslateCallPrintf(fasm, param, node, funcname, machine_code);
+        TranslateCallPrintf(fasm, param, node, funcname, stubs, machine_code);
         break;
     case DataType::SCANF:
         TranslateCallScanf(fasm, param, node, funcname, machine_code);
@@ -727,7 +738,7 @@ void TranslateRet(FILE* fasm, List<variable>* param, node_t* node, const char* f
     delete[] labelname;
 }
 
-void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, ByteArray& machine_code)
+void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code)
 {
     node = node->GetRight();
 
@@ -738,71 +749,35 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
         node = node->GetLeft();
     }
 
+    uint64_t offset = OffsetVariable(param, node);
     fprintf(fasm, "\t\tmov\t\trdi, print_double\n");
-    // machine_code.Append(0x48);
-    // machine_code.Append(0xc7);
-    // machine_code.Append(0xc7);
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", OffsetVariable(param, node));
-    //TTHex_movsd_xmm0_mem_rbp_minus_number(OffsetVariable(param, node), machine_code);
+    fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", offset);
     fprintf(fasm, "\t\tmov\t\teax, 1\n");
-    // machine_code.Append(0xb8);
-    // machine_code.Append(0x01);
-    // machine_code.Append(0x0);
-    // machine_code.Append(0x0);
-    // machine_code.Append(0x0);    
     fprintf(fasm, "\t\tcall\tprintf\n");
-    // machine_code.Append(0xe8);
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');   
+
+    AppendMovsdXmm0Var(offset, machine_code);
+    AppendMovRdiStr(stubs, machine_code);
+    AppendCallFunc("dtoa", stubs, machine_code);
+    machine_code.Append(CMD::MOV_RDX_RAX, 3);
+    machine_code.Append(CMD::MOV_RAX_1, 7);
+    machine_code.Append(CMD::MOV_RDI_1, 7);
+    AppendMovRsiStr(stubs, machine_code);
+    machine_code.Append(CMD::SYSCALL, 2);
+    
+
 
     for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
     {
         node_t* node = StackNodePtr.ShowBack();
         fprintf(fasm, "\t\tmov\t\trdi, print_double\n");
-        // machine_code.Append(0x48);
-        // machine_code.Append(0xc7);
-        // machine_code.Append(0xc7);
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*');
         fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", OffsetVariable(param, node->GetRight()));
-        //TTHex_movsd_xmm0_mem_rbp_minus_number(OffsetVariable(param, node->GetRight()), machine_code);
         fprintf(fasm, "\t\tmov\t\teax, 1\n");
-        // machine_code.Append(0xb8);
-        // machine_code.Append(0x01);
-        // machine_code.Append(0x0);
-        // machine_code.Append(0x0);
-        // machine_code.Append(0x0); 
         fprintf(fasm, "\t\tcall\tprintf\n");
-        // machine_code.Append(0xe8);
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*'); 
         StackNodePtr.PopBack();
     }
 
-    fprintf(fasm, "\t\tmov\t\trdi, 10d\n");
-    // machine_code.Append(0x48);
-    // machine_code.Append(0xc7);
-    // machine_code.Append(0xc7);
-    // machine_code.Append(0x0a);
-    // machine_code.Append(0x0);   
-    // machine_code.Append(0x0);   
-    // machine_code.Append(0x0);   
+    fprintf(fasm, "\t\tmov\t\trdi, 10d\n");  
     fprintf(fasm, "\t\tcall\tputchar\n");
-    // machine_code.Append(0xe8);
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*'); 
 }
 
 void TranslateWhile(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code)
@@ -1150,7 +1125,6 @@ void TranslateExp(FILE* fasm, List<variable>* param, node_t* node, const char* f
     }
 }
 
-
 void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteArray& machine_code)
 {   
     const char* programm_name = MainFuncName(tree);
@@ -1169,4 +1143,128 @@ void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteA
     machine_code.Append(CMD::MOV_RAX_60, 7);
     machine_code.Append(CMD::XOR_RDI_RDI, 3);
     machine_code.Append(CMD::SYSCALL, 2);
+}
+
+void WriteStdFunctions(Stubs& stubs, ByteArray& machine_code)
+{
+    LOX
+    
+    //WritePow(stubs, machine_code);
+    //  WriteLog10(stubs, machine_code);
+    //WriteIsNan(stubs, machine_code);
+    //WriteIsInf(stubs, machine_code);
+    //WriteStrlen(stubs, machine_code);
+    //WriteFloor(stubs, machine_code);
+    WriteDtoa(stubs, machine_code);
+
+    LOX
+}
+
+void WritePow(Stubs& stubs, ByteArray& machine_code)
+{   
+    addr_t buf_ptr = stubs.ElfStubs.data_stubs.p_vaddp;
+    uint8_t* buf = (uint8_t*)memreverse(&buf_ptr, 4); 
+    
+                        //////  00    01    02    03      04      05      06      07      08      09    0A    0B    0C      0D      0E      0F
+    uint8_t pow[0x48] = /*00*/ {0xF2, 0x0F, 0x11, 0x0C,   0x25,   buf[0], buf[1], buf[2], buf[3], 0xDD, 0x04, 0x25, buf[0], buf[1], buf[2], buf[3],
+                        /*10*/  0xF2, 0x0F, 0x11, 0x04,   0x25,   buf[0], buf[1], buf[2], buf[3], 0xDD, 0x04, 0x25, buf[0], buf[1], buf[2], buf[3],
+                        /*20*/  0xD9, 0xF1, 0xD9, 0xC0,   0xD9,   0xFC,   0xD8,   0xE9,   0xD9,   0xF0, 0xD9, 0xE8, 0xDE,   0xC1,   0xD9,   0xFD,
+                        /*30*/  0xDD, 0x1C, 0x25, buf[0], buf[1], buf[2], buf[3], 0xF2,   0x0F,   0x10, 0x04, 0x25, buf[0], buf[1], buf[2], buf[3],
+                        /*40*/  0xDD, 0x1C, 0x25, buf[0], buf[1], buf[2], buf[3], 0xC3};
+
+    stubs.pow_addres = machine_code.Vaddr();
+    machine_code.Append(pow, 0x48);
+}
+
+void WriteLog10(Stubs& stubs, ByteArray& machine_code)
+{   
+    addr_t buf_ptr = stubs.ElfStubs.data_stubs.p_vaddp;
+    uint8_t* buf = (uint8_t*)memreverse(&buf_ptr, 4); 
+    
+                        //////  00      01      02    03    04      05      06      07      08      09    0A    0B      0C      0D      0E      0F
+    uint8_t log[0x29] = /*00*/ {0xF2,   0x0F,   0x11, 0x04, 0x25,   buf[0], buf[1], buf[2], buf[3], 0xD9, 0xE8, 0xDD,   0x04,   0x25,   buf[0], buf[1],
+                        /*10*/  buf[2], buf[3], 0xD9, 0xF1, 0xD9,   0xE9,   0xDE,   0xF9,   0xDD,   0x1C, 0x25, buf[0], buf[1], buf[2], buf[3], 0xF2,
+                        /*20*/  0x0F,   0x10,   0x04, 0x25, buf[0], buf[1], buf[2], buf[3], 0xC3};
+
+    stubs.log10_adderes = machine_code.Vaddr();
+    machine_code.Append(log, 0x29);
+}
+
+
+void WriteIsNan(Stubs& stubs, ByteArray& machine_code)
+{    
+                          //////  00    01    02    03    04    05    06    07    08    09    0A    0B    0C    0D    0E    0F
+    uint8_t isnan[0x24] = /*00*/ {0x55, 0x48, 0x89, 0xE5, 0xF2, 0x0F, 0x11, 0x45, 0xF8, 0xB8, 0x01, 0x00, 0x00, 0x00, 0xF2, 0x0F,
+                          /*10*/  0x10, 0x45, 0xF8, 0x66, 0x0F, 0x2E, 0x45, 0xF8, 0x7A, 0x05, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x0F,
+                          /*20*/  0xB6, 0xC0, 0x5D, 0xC3};
+
+    stubs.isnan_addres = machine_code.Vaddr();
+    machine_code.Append(isnan, 0x24);   
+}
+
+void WriteIsInf(Stubs& stubs, ByteArray& machine_code)
+{    
+                          //////  00    01    02    03    04    05    06    07    08    09    0A    0B    0C    0D    0E    0F
+    uint8_t isinf[0x49] = /*00*/ {0x55, 0x48, 0x89, 0xE5, 0x48, 0x83, 0xEC, 0x08, 0xF2, 0x0F, 0x11, 0x45, 0xF8, 0x48, 0x8B, 0x45,
+                          /*10*/  0xF8, 0x66, 0x48, 0x0F, 0x6E, 0xC0, 0xE8, 0xC1, 0xFF, 0xFF, 0xFF, 0x85, 0xC0, 0x75, 0x23, 0xF2, 
+                          /*20*/  0x0F, 0x10, 0x45, 0xF8, 0xF2, 0x0F, 0x5C, 0xC0, 0x66, 0x48, 0x0F, 0x7E, 0xC0, 0x66, 0x48, 0x0F, 
+                          /*30*/  0x6E, 0xC0, 0xE8, 0xA5, 0xFF, 0xFF, 0xFF, 0x85, 0xC0, 0x74, 0x07, 0xB8, 0x01, 0x00, 0x00, 0x00, 
+                          /*40*/  0xEB, 0x05, 0xB8, 0x00, 0x00, 0x00, 0x00, 0xC9, 0xC3};
+
+    stubs.isinf_addres = machine_code.Vaddr();
+    machine_code.Append(isinf, 0x49);   
+}
+
+void WriteStrlen(Stubs& stubs, ByteArray& machine_code)
+{    
+                           //////  00    01    02    03    04    05    06    07    08    09    0A    0B    0C    0D    0E    0F
+    uint8_t strlen[0x2A] = /*00*/ {0x55, 0x48, 0x89, 0xE5, 0x48, 0x89, 0x7D, 0xE8, 0xC7, 0x45, 0xFC, 0x00, 0x00, 0x00, 0x00, 0xEB,
+                           /*10*/  0x09, 0x83, 0x45, 0xFC, 0x01, 0x48, 0x83, 0x45, 0xE8, 0x01, 0x48, 0x8B, 0x45, 0xE8, 0x0F, 0xB6,
+                           /*20*/  0x00, 0x84, 0xC0, 0x75, 0xEC, 0x8B, 0x45, 0xFC, 0x5D, 0xC3};
+
+    stubs.strlen_addres = machine_code.Vaddr();
+    machine_code.Append(strlen, 0x2A);   
+}
+
+void WriteFloor(Stubs& stubs, ByteArray& machine_code)
+{    
+                           //////  00    01    02    03    04    05    06    07    08    09    0A    0B    0C    0D    0E    0F
+    uint8_t floor[0x56] =  /*00*/ {0x55, 0x48, 0x89, 0xE5, 0xF2, 0x0F, 0x11, 0x45, 0xF8, 0xF2, 0x0F, 0x10, 0x45, 0xF8, 0x66, 0x0F,
+                           /*10*/  0xEF, 0xC9, 0x66, 0x0F, 0x2F, 0xC1, 0x72, 0x13, 0xF2, 0x0F, 0x10, 0x45, 0xF8, 0xF2, 0x0F, 0x2C,
+                           /*20*/  0xC0, 0x66, 0x0F, 0xEF, 0xC0, 0xF2, 0x0F, 0x2A, 0xC0, 0xEB, 0x1F, 0xF2, 0x0F, 0x10, 0x45, 0xF8,
+                           /*30*/  0xD9, 0xE8, 0xDD, 0x5D, 0xF0, 0xF2, 0x0F, 0x10, 0x4D, 0xF0, 0xF2, 0x0F, 0x5C, 0xC1, 0xF2, 0x0F,
+                           /*40*/  0x2C, 0xC0, 0x66, 0x0F, 0xEF, 0xC0, 0xF2, 0x0F, 0x2A, 0xC0, 0x66, 0x48, 0x0F, 0x7E, 0xC0, 0x66,
+                           /*50*/  0x48, 0x0F, 0x6E, 0xC0, 0x5D, 0xC3};
+
+    stubs.floor_addres = machine_code.Vaddr();
+    machine_code.Append(strlen, 0x56);   
+}
+
+void WriteDtoa(Stubs& stubs, ByteArray& machine_code)
+{    
+    // FILE* dtoa_file = fopen("dtoa", "rb");
+    // uint8_t* dtoa = new uint8_t[0x4BA] {0};
+    // fread(dtoa, 1, 0x4BA, dtoa_file);
+
+    // stubs.dtoa_addres = machine_code.Vaddr();
+    // stubs.labels.PushBack(Label("dtoa", stubs.dtoa_addres));
+    // machine_code.Append(dtoa, 0x4BA);   
+
+    // fclose(dtoa_file);
+    // delete[] dtoa;
+
+    LOX
+    
+    FILE* func = fopen("all", "rb");
+    uint8_t* all = new uint8_t[0x5f6] {0};
+    fread(all, 1, 0x5f6, func);
+
+    stubs.dtoa_addres = machine_code.Vaddr() + 0x13c;
+    stubs.labels.PushBack(Label("dtoa", stubs.dtoa_addres));
+    stubs.labels.PushBack(Label("pow", machine_code.Vaddr() ));
+    machine_code.AppendBin(all, 0x5f6);   
+
+    fclose(func);
+    delete[] all;
+
 }
