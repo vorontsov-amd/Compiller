@@ -9,9 +9,11 @@ void TranslateToAsm(List<DifferTree>& proga)
 
     ByteArray machine_code;
     Stubs stubs;
+    List<Label>* lbl = new List<Label>;
+    stubs.labels = *lbl;
+
     WriteELFHeader(stubs, machine_code);
     WritePreamble(fasm, proga, stubs, machine_code);
-    //Test(machine_code);
     TranslateProcessing(fasm, proga, stubs, machine_code);
     LOX
     LOX
@@ -20,14 +22,21 @@ void TranslateToAsm(List<DifferTree>& proga)
     stubs.rewind_const = true;
     stubs.rewind_if = true;
     stubs.rewind_while = true;
+    stubs.rewind_init = true;
+    stubs.rewind_const_expr = true;
     rewind(fasm);
     machine_code.Rewind();
 
     LOX
 
     WriteELFHeader(stubs, machine_code);
+
+    LOX
+
     WritePreamble(fasm, proga, stubs, machine_code);
-    //Test(machine_code);
+
+    LOX
+
     TranslateProcessing(fasm, proga, stubs, machine_code);
 
     LOX
@@ -100,60 +109,6 @@ void WriteELFHeader(Stubs& stubs, ByteArray& machine_code)
     machine_code.Append(text_header);
 }
 
-/*void Test(ByteArray& machine_code)
-{
-    machine_code.Append(0x48);
-    machine_code.Append(0xc7);
-    machine_code.Append(0xc0);
-    machine_code.Append(0x01);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-
-
-    machine_code.Append(0x47);
-    machine_code.Append(0xc7);
-    machine_code.Append(0xc7);
-    machine_code.Append(0x01);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-
-    machine_code.Append(0x48);
-    machine_code.Append(0xc7);
-    machine_code.Append(0xc6);
-    machine_code.Append(0xe8);
-    machine_code.Append(0x30);
-    machine_code.Append(0xbb);
-    machine_code.Append(0x09);
-
-    machine_code.Append(0x48);
-    machine_code.Append(0xc7);
-    machine_code.Append(0xc2);
-    machine_code.Append(0x05);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-
-    machine_code.Append(0x0f);
-    machine_code.Append(0x05);
-
-//exit
-
-    machine_code.Append(0x48);
-    machine_code.Append(0xc7);
-    machine_code.Append(0xc0);
-    machine_code.Append(0x3c);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-    machine_code.Append(0x00);
-    machine_code.Append(0x48);
-    machine_code.Append(0x31);
-    machine_code.Append(0xff);
-
-    machine_code.Append(0x0f);
-    machine_code.Append(0x05);
-}*/
 
 const char* ProgrammName(List<DifferTree>& proga)
 {
@@ -176,7 +131,9 @@ void WritePreamble(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray&
     fputs("global main\n", fasm);
     fputs("extern printf, scanf, putchar\n\n", fasm);
     PreambleData(fasm, proga, stubs, machine_code);
+    LOX
     PreambleRodata(fasm, proga, stubs, machine_code);
+    LOX
     fputs("section .text\n", fasm);
 }
 
@@ -189,7 +146,10 @@ void PreambleRodata(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray
         stubs.ElfStubs.rodata_stubs.p_offset = rodata_begin;
         stubs.ElfStubs.rodata_stubs.p_vaddp = stubs.ElfStubs.e_entry + rodata_begin;
     }
+    LOX
     WriteConstant(fasm, proga, stubs, machine_code);
+    fprintf(fasm, "print_double: db '%%lg ', 0x0\n");
+    LOX
     uint16_t rodata_end = machine_code.Size();
     if (stubs.is_loading)
     {
@@ -214,10 +174,12 @@ void PreambleData(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& 
 
 void WriteConstant(FILE* fasm, List<DifferTree> proga, Stubs& stubs, ByteArray& machine_code)
 {       
+    LOX
     int size = proga.Size();
-
+    LOX
     for (int i = 0; i < size; i++)
     {
+        LOX
         DifferTree tree = proga.ShowFront();
         SearchConst(fasm, tree.Root(), stubs, machine_code);
         proga.PopFront();
@@ -495,7 +457,7 @@ void WriteFuncEpilog(FILE* fasm, List<variable>* param, node_t* node, const char
     fputs("\t\tret\n", fasm);
     machine_code.Append(CMD::RET, 1);
 
-    delete label_name;
+    delete[] label_name;
 }
 
 void TranslateOpSequence(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code)
@@ -601,6 +563,12 @@ void TranslateInit(FILE* fasm, List<variable>* param, node_t* node, const char* 
     node = node->GetRight();
     static const char* last_call_func = funcname;
     static int offset = initial_offset + sizeof(double);
+    static int offset_save = offset;
+    if (stubs.rewind_init)
+    {
+        offset = offset_save;
+        stubs.rewind_init = false;
+    }
 
     if (last_call_func != funcname)
     {
@@ -610,7 +578,6 @@ void TranslateInit(FILE* fasm, List<variable>* param, node_t* node, const char* 
     {
         variable var(node, false, offset);
         param->PushFront(var);
-
     }
     else if (node->dType() == DataType::MOV)
     {
@@ -650,53 +617,18 @@ void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, const cha
     }
 
     fprintf(fasm, "\t\tmov\t\trdi, scan_double\n");
-    // machine_code.Append(0x48);
-    // machine_code.Append(0xc7);
-    // machine_code.Append(0xc7);
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');
     fprintf(fasm, "\t\tlea\t\trsi, [rbp - %ld]\n", OffsetVariable(lst, node));
-    //TTHex_lea_rsi_mem_rbp_minus_num(OffsetVariable(lst, node), machine_code);
     fprintf(fasm, "\t\tmov\t\teax, 1\n");
-    // machine_code.Append(0xb8);
-    // machine_code.Append(0x01);
-    // machine_code.Append(0x0);
-    // machine_code.Append(0x0);
-    // machine_code.Append(0x0);  
     fprintf(fasm, "\t\tcall\tscanf\n");
-    // machine_code.Append(0xe8);
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*');
-    // machine_code.Append('*'); 
 
     for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
     {
         node_t* node = StackNodePtr.ShowBack();
         fprintf(fasm, "\t\tmov\t\trdi, scan_double\n");
-        // machine_code.Append(0x48);
-        // machine_code.Append(0xc7);
-        // machine_code.Append(0xc7);
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*');
         fprintf(fasm, "\t\tlea\t\trsi, [rbp - %ld]\n", OffsetVariable(lst, node->GetRight()));
-        //TTHex_lea_rsi_mem_rbp_minus_num(OffsetVariable(lst, node->GetRight()), machine_code);
         fprintf(fasm, "\t\tmov\t\teax, 1\n");
-        // machine_code.Append(0xb8);
-        // machine_code.Append(0x01);
-        // machine_code.Append(0x0);
-        // machine_code.Append(0x0);
-        // machine_code.Append(0x0); 
         fprintf(fasm, "\t\tcall\tscanf\n");
-        // machine_code.Append(0xe8);
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*');
-        // machine_code.Append('*'); 
+
         StackNodePtr.PopBack();
     }
 }
@@ -749,11 +681,15 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
         node = node->GetLeft();
     }
 
+    AppendAddRspNum(8, machine_code);
+
     uint64_t offset = OffsetVariable(param, node);
     fprintf(fasm, "\t\tmov\t\trdi, print_double\n");
     fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", offset);
     fprintf(fasm, "\t\tmov\t\teax, 1\n");
     fprintf(fasm, "\t\tcall\tprintf\n");
+
+    AppendSubRspNum(8, machine_code);
 
     AppendMovsdXmm0Var(offset, machine_code);
     AppendMovRdiStr(stubs, machine_code);
@@ -1101,9 +1037,10 @@ void TranslateExp(FILE* fasm, List<variable>* param, node_t* node, const char* f
         break;
     case DataType::CONSTANT:
         static int num_const = 0;
-        if (!stubs.is_loading)
+        if (stubs.rewind_const_expr)
         {
             num_const = 0;
+            stubs.rewind_const_expr = false;
         }   
         fprintf(fasm, "\t\tpush\tqword [const_%d]\n", num_const);
         AppendPushConst(num_const++, stubs, machine_code);
@@ -1128,6 +1065,7 @@ void TranslateExp(FILE* fasm, List<variable>* param, node_t* node, const char* f
 void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteArray& machine_code)
 {   
     const char* programm_name = MainFuncName(tree);
+    assert(programm_name);
     
     fprintf(fasm, "main:\n");
     fprintf(fasm, "\t\tfinit\n");

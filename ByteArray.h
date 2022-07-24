@@ -93,10 +93,11 @@ public:
     index_t Append(const Elf64_Ehdr ehdr);
     index_t Append(const Elf64_Phdr phdr);
     index_t Append(const uint32_t ch);
+    index_t Append(const uint8_t num);
     index_t Append(const double num);
     index_t Append(const char* func, size_t len);
     //index_t Append(const uint64_t num);
-    template <typename T> index_t Append(const T cmd, size_t size);
+    template <typename T> index_t Append(const T cmd, size_t size_cmd);
     index_t AppendBin(const uint8_t* cmd, size_t size);
 
 
@@ -110,16 +111,16 @@ public:
 };
 
 
-template <typename T> index_t ByteArray::Append(const T cmd, size_t size)
+template <typename T> index_t ByteArray::Append(const T cmd, size_t size_cmd)
 {
-    if (cur_index == size - 1)
+    if (cur_index + size_cmd >= size - 1)
     {
         array = (char*)realloc(array, 2 * size);
         size = 2 * size;
     }
-    memcpy(array + cur_index, &cmd, size);
-    memreverse(array + cur_index, size);
-    cur_index += size;
+    memcpy(array + cur_index, &cmd, size_cmd);
+    memreverse(array + cur_index, size_cmd);
+    cur_index += size_cmd;
     return cur_index;
 }
 
@@ -180,7 +181,9 @@ struct Stubs
     bool is_loading = true;
     bool rewind_if = false;
     bool rewind_const = false;
+    bool rewind_const_expr = false;
     bool rewind_while = false;
+    bool rewind_init = false;
 };
 
 

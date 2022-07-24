@@ -41,7 +41,7 @@ ByteArray::~ByteArray()
 
 index_t ByteArray::Append(const Elf64_Ehdr ehdr)
 {
-    if (cur_index == size - 1)
+    if (cur_index + sizeof(ehdr) >= size - 1)
     {
         array = (char*)realloc(array, 2 * size);
         size = 2 * size;
@@ -55,7 +55,7 @@ index_t ByteArray::Append(const Elf64_Ehdr ehdr)
 
 index_t ByteArray::Append(const Elf64_Phdr phdr)
 {
-    if (cur_index == size - 1)
+    if (cur_index  + sizeof(phdr) >= size - 1)
     {
         array = (char*)realloc(array, 2 * size);
         size = 2 * size;
@@ -83,7 +83,7 @@ index_t ByteArray::Append(const Elf64_Phdr phdr)
 
 index_t ByteArray::Append(const double num)
 {
-    if (cur_index == size - 1)
+    if (cur_index + sizeof(num) >= size - 1)
     {
         array = (char*)realloc(array, 2 * size);
         size = 2 * size;
@@ -96,7 +96,7 @@ index_t ByteArray::Append(const double num)
 
 index_t ByteArray::Append(const addr_t num)
 {    
-    if (cur_index == size - 1)
+    if (cur_index + sizeof(num) >= size - 1)
     {
         array = (char*)realloc(array, 2 * size);
         size = 2 * size;
@@ -111,7 +111,8 @@ index_t ByteArray::AppendBin(const uint8_t* func, size_t len)
 {    
     if (cur_index + len >= size - 1)
     {
-        array = (char*)realloc(array, 2 * size);
+        char* new_array = (char*)calloc(2 * size, 1);
+        memcpy(new_array, array, cur_index);
         size = 2 * size;
     }
     LOX
@@ -179,10 +180,6 @@ addr_t Label::Addres() const
 
 Label& Label::operator=(const Label& lbl)
 {
-    if (name) 
-    {
-        delete[] name;
-    }
     if (lbl.name)
     {
         name = new char[strlen(lbl.name) + 1];
@@ -190,7 +187,8 @@ Label& Label::operator=(const Label& lbl)
     }
     else
     {
-        name = nullptr;
+        name = new char[1];
+        name[0] = '\0';
     }
 
     addr = lbl.addr;
@@ -242,13 +240,15 @@ void AppendPushVar(uint32_t number, ByteArray& machine_code)
 {
     if (number < 0x80)
     {
-        uint32_t cmd = CMD::PUSH_VAR_L | number;
-        machine_code.Append(cmd, 4);
+        uint8_t offset = -number % 0x100;
+        uint32_t cmd = CMD::PUSH_VAR_L | offset;
+        machine_code.Append(cmd, 3);
     }
     else
     {
-        uint64_t cmd = CMD::PUSH_VAR_B | number;
-        machine_code.Append(cmd, 7);
+        uint32_t offset = -number;
+        uint64_t cmd = CMD::PUSH_VAR_B | offset;
+        machine_code.Append(cmd, 6);
     }
 }
 
@@ -354,7 +354,6 @@ void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code)
 void AppendJmpLabel(const char* labelname, Stubs& stubs, ByteArray& machine_code)
 {
     Label lbl = SearchLabel(labelname, stubs.labels);
-
 
     uint32_t distance = lbl.Addres() - machine_code.Vaddr() - 5;
 
