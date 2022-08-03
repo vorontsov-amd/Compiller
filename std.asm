@@ -1,36 +1,6 @@
-global main
 
-extern printf
-
-section .data
-buffer: dq 0.0
-str: times 32 db 0
-section .rodata
-const_0: dq 3.11
-const_1: dq 2
-LC1 dq 1.0
-LC2 dq -1.0
-LC3 dq 10.0
-LC4 dq 0.00000000000001
-
-
+global dtoa, atod
 section .text
-main:
-        push    rbp
-        mov     rbp, rsp
-    
-        lea     rdi, [str]
-        movsd   xmm0, qword [const_0]
-        call    dtoa
-
-        mov     rdx, rax
-        mov     rax, 1
-        mov     rdi, 1
-        mov     rsi, str
-        syscall
-
-        leave
-        ret
 
 pow:
         push    rbp
@@ -67,6 +37,208 @@ log10:
         movsd   xmm0, qword [rbp-8]
         pop     rbp
         ret
+
+
+
+
+
+dtoa:
+%define dtoa_str [rbp-8] 
+%define dtoa_num [rbp-16] 
+%define dtoa_buffer [rbp-24]
+%define dtoa_exp [rbp-32]
+%define dtoa_e [rbp-42]
+%define dtoa_digit [rbp-48]
+                push    rbp
+                mov     rbp, rsp
+                sub     rsp, 48
+                mov     qword dtoa_str, rdi
+                movsd   qword dtoa_num, xmm0
+                call    isNan
+                test    rax, rax
+                mov     rsi, qword dtoa_str
+                je      .if_inf
+.if_nan:        mov     byte [rsi], 'n'
+                inc     rsi
+                mov     byte [rsi], 'a'
+                inc     rsi 
+                mov     byte [rsi], 'n'
+                inc     rsi
+                mov     byte [rsi], 0
+                jmp     .end_if
+
+.if_inf:        call    isInf
+                test    rax, rax
+                je      .if_zero
+                mov     byte [rsi], 'i'
+                inc     rsi
+                mov     byte [rsi], 'n'
+                inc     rsi 
+                mov     byte [rsi], 'f'
+                inc     rsi
+                mov     byte [rsi], 0
+                jmp     .end_if 
+
+.if_zero:       mov     rax, qword dtoa_num
+                test    rax, rax
+                jne     .if_else
+                mov     byte [rsi], '0'
+                inc     rsi
+                mov     byte [rsi], 0
+                jmp     .end_if
+
+.if_else:       movsd   xmm0, qword dtoa_num
+                mov     rax, 0
+                movq    xmm1, rax
+                comisd  xmm0, xmm1
+.if_num_less_zero: 
+                jae     .if_num_less_zero_end
+                mov     rax, -1
+                cvtsi2sd xmm1, rax
+                mulsd   xmm0, xmm1
+                movsd   qword dtoa_num, xmm0
+                mov     byte [rsi], '-'
+                inc     rsi
+                
+.if_num_less_zero_end:         
+                movsd   xmm0, qword dtoa_num
+                call    log10
+                call    Floor
+                cvttsd2si rax, xmm0
+                mov     qword dtoa_exp, rax
+
+                mov     rdx, 13
+                cmp     rax, rdx
+                jg      .if_use_exp
+
+                mov     rdx, -9
+                cmp     rax, rdx
+                jge     .if_use_exp_end
+
+.if_use_exp:    
+                mov     rax, 10
+                cvtsi2sd xmm0, rax
+                cvtsi2sd xmm1, qword dtoa_exp
+                call    pow
+                movsd   xmm1, qword dtoa_num
+                divsd   xmm1, xmm0
+
+                movsd   qword dtoa_num, xmm1
+                cvttsd2si rdx, xmm1
+                add     rdx, '0'
+                mov     byte [rsi], dl
+                inc     rsi
+                mov     byte [rsi], '.'
+                inc     rsi
+                mov     ecx, 6
+
+.loop0:         
+                movsd   xmm0, qword dtoa_num
+                cvttsd2si rdx, xmm0
+                cvtsi2sd xmm1, rdx
+                subsd   xmm0, xmm1
+                mov     rax, 10
+                cvtsi2sd xmm1, rax
+                mulsd   xmm0, xmm1
+                movsd   qword dtoa_num, xmm0 
+                cvttsd2si rdx, xmm0
+                add     rdx, '0'
+                mov     byte [rsi], dl
+                inc     rsi
+                loop    .loop0
+                
+                mov     byte [rsi], 'e'
+                inc     rsi
+
+                mov     rax, dtoa_exp
+                mov     rdx, 0
+                cmp     rax, rdx
+                jge     .if_exp_less_zero_end
+.if_exp_less_zero:
+                                
+                mov     rdx, -1
+                imul     rax, rdx
+
+                mov     qword dtoa_exp, rax
+                mov     byte [rsi], '-'
+                inc     rsi
+.if_exp_less_zero_end:
+                
+                cvtsi2sd xmm0, rax
+                call    log10
+                cvttsd2si rax, xmm0
+                mov     qword dtoa_e, rax
+
+                mov     rdi, qword dtoa_exp
+                mov     rdx, rsi
+                mov     rsi, qword dtoa_e
+                call    itoa
+                mov     rsi, rax
+                jmp     .end_if
+
+.if_use_exp_end:
+                movsd   xmm1, qword dtoa_num
+                cvttsd2si rax, xmm1
+                mov     qword dtoa_digit, rax
+                cvtsi2sd xmm0, rax
+                subsd   xmm1, xmm0
+                movsd   qword dtoa_num, xmm1
+                mov     rdi, rax
+                mov     rdx, rsi
+                mov     rsi, qword dtoa_exp
+                call    itoa
+                mov     rsi, rax
+
+                mov     edx, 1
+                mov     edi, 10000000
+                cvtsi2sd xmm3, edi
+                cvtsi2sd xmm2, edx
+                mulsd   xmm3, xmm3
+                divsd   xmm2, xmm3
+                movsd   xmm4, dtoa_num
+                comisd  xmm4, xmm2
+                jb      .end_if
+
+
+                mov     byte [rsi], '.'
+                inc     rsi
+
+                mov     ecx, 15
+                mov     ebx, 10
+
+.loop1:         
+                mov     eax, 10
+                cvtsi2sd xmm0, eax
+                mulsd   xmm0, dtoa_num
+                cvttsd2si rax, xmm0
+                cvtsi2sd xmm1, rax
+                subsd   xmm0, xmm1
+                movsd   qword dtoa_num, xmm0
+                add     rax, '0'
+                mov     byte [rsi], al
+                inc     rsi
+
+                cvtsi2sd xmm0, ebx
+                mov     r8, 15
+                sub     r8, rcx
+                cvtsi2sd xmm1, r8
+                call    pow
+                mulsd   xmm0, xmm2
+                movsd   xmm1, qword dtoa_num
+                comisd  xmm1, xmm0
+                jb      .end_if
+
+                loop    .loop1
+
+.end_if:
+                mov     byte [rsi], 0
+                mov     rdi, dtoa_str
+                call    Strlen
+                leave
+                ret
+
+
+
 
 
 
@@ -129,6 +301,84 @@ Strlen:
         ret
 
 
+itoa:
+%define itoa_digit [rbp-8]
+%define itoa_exp [rbp-16]
+%define itoa_str [rbp-24]
+%define itoa_c [rbp-32]
+                push    rbp
+                mov     rbp, rsp
+                sub     rsp, 32
+                mov     qword itoa_digit, rdi
+                mov     qword itoa_exp, rsi
+                mov     qword itoa_str, rdx
+                mov     qword itoa_c, rdx
+.while_loop:
+                mov     rsi, itoa_str
+                mov     rdi, qword itoa_digit
+                mov     rsi, 10
+                call    mod
+                add     rax, '0'
+                mov     rsi, itoa_str
+                mov     byte [rsi], al
+                inc     rsi
+                mov     qword itoa_str, rsi
+                mov     rdi, qword itoa_digit
+                mov     rsi, 10
+                call    divq       
+                mov     qword itoa_digit, rax
+                test    rax, rax         
+                jne     .while_loop
+
+                mov     rax, itoa_exp
+                xor     rdx, rdx
+                cmp     rax, rdx
+                jle     .leave
+
+                mov     r8, itoa_c
+                lea     r9, [r8+rax]
+                jmp     .test
+.loop:
+                mov     bl, byte [r8]
+                mov     dl, byte [r9]
+                mov     byte [r8], dl
+                mov     byte [r9], bl
+                inc     r8
+                dec     r9
+.test:          cmp     r8, r9
+                jb      .loop
+
+.leave:
+                mov     rax, itoa_str
+                leave
+                ret
+
+
+
+divq:
+        push    rbp
+        mov     rbp, rsp
+        mov     QWORD [rbp-8], rdi
+        mov     QWORD [rbp-16], rsi
+        mov     rax, QWORD [rbp-8]
+        cqo
+        idiv    QWORD [rbp-16]
+        pop     rbp
+        ret
+mod:
+        push    rbp
+        mov     rbp, rsp
+        mov     QWORD [rbp-8], rdi
+        mov     QWORD [rbp-16], rsi
+        mov     rax, QWORD [rbp-8]
+        cqo
+        idiv    QWORD [rbp-16]
+        mov     rax, rdx
+        pop     rbp
+        ret
+
+
+
 
 Floor:
         push    rbp
@@ -161,367 +411,127 @@ Floor:
         ret
 
 
-
-
-dtoa:
+isDigit:
         push    rbp
         mov     rbp, rsp
-        sub     rsp, 80
-        mov     QWORD  [rbp-72], rdi
-        movsd   QWORD  [rbp-80], xmm0
-        mov     DWORD  [rbp-28], 0
-        mov     rax, QWORD  [rbp-80]
-        movq    xmm0, rax
-        call    isNan
-        test    eax, eax
-        je      .L28
-        mov     rax, QWORD  [rbp-72]
-        mov     BYTE  [rax], 110
-        mov     rax, QWORD  [rbp-72]
-        add     rax, 1
-        mov     BYTE  [rax], 97
-        mov     rax, QWORD  [rbp-72]
-        add     rax, 2
-        mov     BYTE  [rax], 110
-        mov     rax, QWORD  [rbp-72]
-        add     rax, 4
-        mov     BYTE  [rax], 0
-        jmp     .L29
-.L28:
-        mov     rax, QWORD  [rbp-80]
-        movq    xmm0, rax
-        call    isInf
-        test    eax, eax
-        je      .L30
-        mov     rax, QWORD  [rbp-72]
-        mov     BYTE  [rax], 105
-        mov     rax, QWORD  [rbp-72]
-        add     rax, 1
-        mov     BYTE  [rax], 110
-        mov     rax, QWORD  [rbp-72]
-        add     rax, 2
-        mov     BYTE  [rax], 102
-        mov     rax, QWORD  [rbp-72]
-        add     rax, 4
-        mov     BYTE  [rax], 0
-        jmp     .L29
-.L30:
-        pxor    xmm0, xmm0
-        ucomisd xmm0,   [rbp-80]
-        jp      .L31
-        pxor    xmm0, xmm0
-        ucomisd xmm0,   [rbp-80]
-        jne     .L31
-        mov     rax, QWORD  [rbp-72]
-        mov     BYTE  [rax], 48
-        mov     rax, QWORD  [rbp-72]
-        add     rax, 1
-        mov     BYTE  [rax], 0
-        jmp     .L29
-.L31:
-        mov     rax, QWORD  [rbp-72]
-        mov     QWORD  [rbp-16], rax
-        pxor    xmm0, xmm0
-        comisd  xmm0,   [rbp-80]
-        seta    al
-        movzx   eax, al
-        mov     DWORD  [rbp-32], eax
-        cmp     DWORD  [rbp-32], 0
-        je      .L33
-        movsd   xmm0, QWORD  [rbp-80]
-
-        fldz
-        fld1
-        fsubp
-        fstp    qword [rbp-40]
-
-        movsd    xmm1, QWORD  [rbp-40]
-        mulsd   xmm0, xmm1
-        movsd   QWORD  [rbp-80], xmm0
-.L33:
-        mov     rax, QWORD  [rbp-80]
-        movq    xmm0, rax
-        call    log10
-        cvttsd2si       eax, xmm0
-        mov     DWORD  [rbp-4], eax
-        cmp     DWORD  [rbp-4], 13
-        jg      .L34
-        cmp     DWORD  [rbp-32], 0
-        je      .L35
-        cmp     DWORD  [rbp-4], 8
-        jg      .L34
-.L35:
-        cmp     DWORD  [rbp-4], -8
-        jge     .L36
-.L34:
+        mov     eax, edi
+        mov     BYTE [rbp-4], al
+        cmp     BYTE [rbp-4], 47
+        jle     .L24
+        cmp     BYTE [rbp-4], 57
+        jg      .L24
         mov     eax, 1
-        jmp     .L37
-.L36:
+        jmp     .L26
+.L24:
         mov     eax, 0
-.L37:
-        mov     DWORD  [rbp-36], eax
-        cmp     DWORD  [rbp-32], 0
-        je      .L38
-        mov     rax, QWORD  [rbp-16]
-        lea     rdx, [rax+1]
-        mov     QWORD  [rbp-16], rdx
-        mov     BYTE  [rax], 45
-.L38:
-        cmp     DWORD  [rbp-36], 0
-        je      .L39
-        cmp     DWORD  [rbp-4], 0
-        jns     .L40
-        pxor    xmm0, xmm0
-        cvtsi2sd        xmm0, DWORD  [rbp-4]
-
-        fld1
-        fstp    qword [rbp-40]
-
-        movsd   xmm1, QWORD  [rbp-40]
-        subsd   xmm0, xmm1
-        cvttsd2si       eax, xmm0
-        mov     DWORD  [rbp-4], eax
-.L40:
-        pxor    xmm0, xmm0
-        cvtsi2sd        xmm0, DWORD  [rbp-4]
-
-        fld1
-        fld1
-        times 8 fadd    st1
-        faddp st1, st0
-        fstp    qword [rbp-40]
-
-        mov     rax, QWORD  [rbp-40]
-        movapd  xmm1, xmm0
-        movq    xmm0, rax
-        call    pow
-        movapd  xmm1, xmm0
-        movsd   xmm0, QWORD  [rbp-80]
-        divsd   xmm0, xmm1
-        movsd   QWORD  [rbp-80], xmm0
-        mov     eax, DWORD  [rbp-4]
-        mov     DWORD  [rbp-8], eax
-        mov     DWORD  [rbp-4], 0
-.L39:
-        cmp     DWORD  [rbp-4], 0
-        jg      .L42
-        mov     DWORD  [rbp-4], 0
-        jmp     .L42
-.L47:
-        pxor    xmm0, xmm0
-        cvtsi2sd        xmm0, DWORD  [rbp-4]
-
-        fld1
-        fld1
-        times 8 fadd    st1
-        faddp st1, st0
-        fstp    qword [rbp-64]
+.L26:
+        pop     rbp
+        ret
 
 
-        mov     rax, QWORD  [rbp - 64]
-        movapd  xmm1, xmm0
-        movq    xmm0, rax
-        call    pow
-        movq    rax, xmm0
-        mov     QWORD  [rbp-48], rax
-        movsd   xmm0, QWORD  [rbp-48]
-        pxor    xmm1, xmm1
-        comisd  xmm0, xmm1
-        jbe     .L43
-        mov     rax, QWORD  [rbp-48]
-        movq    xmm0, rax
-        call    isInf
-        test    eax, eax
-        jne     .L43
-        movsd   xmm0, QWORD  [rbp-80]
-        divsd   xmm0,   [rbp-48]
-        movq    rax, xmm0
-        movq    xmm0, rax
-        call    Floor
-        cvttsd2si       eax, xmm0
-        mov     DWORD  [rbp-52], eax
-        pxor    xmm0, xmm0
-        cvtsi2sd        xmm0, DWORD  [rbp-52]
-        movapd  xmm1, xmm0
-        mulsd   xmm1,   [rbp-48]
-        movsd   xmm0, QWORD  [rbp-80]
-        subsd   xmm0, xmm1
-        movsd   QWORD  [rbp-80], xmm0
-        mov     eax, DWORD  [rbp-52]
-        lea     ecx, [rax+48]
-        mov     rax, QWORD  [rbp-16]
-        lea     rdx, [rax+1]
-        mov     QWORD  [rbp-16], rdx
-        mov     edx, ecx
-        mov     BYTE  [rax], dl
-.L43:
-        cmp     DWORD  [rbp-4], 0
-        jne     .L45
-        movsd   xmm0, QWORD  [rbp-80]
-        pxor    xmm1, xmm1
-        comisd  xmm0, xmm1
-        jbe     .L45
-        mov     rax, QWORD  [rbp-16]
-        lea     rdx, [rax+1]
-        mov     QWORD  [rbp-16], rdx
-        mov     BYTE  [rax], 46
-.L45:
-        sub     DWORD  [rbp-4], 1
-.L42:
-        movsd   xmm0, QWORD  [rbp-80]
 
-        fld1
-        fld1
-        fld1
-        times 8 fadd    st1
-        faddp st1, st0
-        fld st0
-        times 14 fmul st1
-        fmulp st1, st0
-        fdivp st1, st0
-        fstp    qword [rbp-56]
-
-        comisd  xmm0,   [rbp-56]
-        ja      .L47
-        cmp     DWORD  [rbp-4], 0
-        jns     .L47
-        cmp     DWORD  [rbp-36], 0
-        je      .L48
-        mov     rax, QWORD  [rbp-16]
-        lea     rdx, [rax+1]
-        mov     QWORD  [rbp-16], rdx
-        mov     BYTE  [rax], 101
-        cmp     DWORD  [rbp-8], 0
-        jle     .L49
-        mov     rax, QWORD  [rbp-16]
-        lea     rdx, [rax+1]
-        mov     QWORD  [rbp-16], rdx
-        mov     BYTE  [rax], 43
-        jmp     .L50
-.L49:
-        mov     rax, QWORD  [rbp-16]
-        lea     rdx, [rax+1]
-        mov     QWORD  [rbp-16], rdx
-        mov     BYTE  [rax], 45
-        neg     DWORD  [rbp-8]
-.L50:
-        mov     DWORD  [rbp-4], 0
-        jmp     .L51
-.L52:
-        mov     ecx, DWORD  [rbp-8]
-        movsx   rax, ecx
-        imul    rax, rax, 1717986919
-        shr     rax, 32
-        mov     edx, eax
-        sar     edx, 2
-        mov     eax, ecx
-        sar     eax, 31
-        sub     edx, eax
-        mov     eax, edx
-        sal     eax, 2
-        add     eax, edx
-        add     eax, eax
-        sub     ecx, eax
-        mov     edx, ecx
-        mov     eax, edx
-        lea     ecx, [rax+48]
-        mov     rax, QWORD  [rbp-16]
-        lea     rdx, [rax+1]
-        mov     QWORD  [rbp-16], rdx
-        mov     edx, ecx
-        mov     BYTE  [rax], dl
-        mov     eax, DWORD  [rbp-8]
-        movsx   rdx, eax
-        imul    rdx, rdx, 1717986919
-        shr     rdx, 32
-        mov     ecx, edx
-        sar     ecx, 2
-        cdq
-        mov     eax, ecx
-        sub     eax, edx
-        mov     DWORD  [rbp-8], eax
-        add     DWORD  [rbp-4], 1
-.L51:
-        cmp     DWORD  [rbp-8], 0
-        jg      .L52
-        mov     eax, DWORD  [rbp-4]
-        cdqe
-        neg     rax
-        add     QWORD  [rbp-16], rax
-        mov     DWORD  [rbp-20], 0
-        mov     eax, DWORD  [rbp-4]
-        sub     eax, 1
-        mov     DWORD  [rbp-24], eax
-        jmp     .L53
-.L54:
-        mov     eax, DWORD  [rbp-20]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        movzx   esi, BYTE  [rax]
-        mov     eax, DWORD  [rbp-24]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        movzx   ecx, BYTE  [rax]
-        mov     eax, DWORD  [rbp-20]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        xor     esi, ecx
-        mov     edx, esi
-        mov     BYTE  [rax], dl
-        mov     eax, DWORD  [rbp-24]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        movzx   esi, BYTE  [rax]
-        mov     eax, DWORD  [rbp-20]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        movzx   ecx, BYTE  [rax]
-        mov     eax, DWORD  [rbp-24]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        xor     esi, ecx
-        mov     edx, esi
-        mov     BYTE  [rax], dl
-        mov     eax, DWORD  [rbp-20]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        movzx   esi, BYTE  [rax]
-        mov     eax, DWORD  [rbp-24]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        movzx   ecx, BYTE  [rax]
-        mov     eax, DWORD  [rbp-20]
-        movsx   rdx, eax
-        mov     rax, QWORD  [rbp-16]
-        add     rax, rdx
-        xor     esi, ecx
-        mov     edx, esi
-        mov     BYTE  [rax], dl
-        add     DWORD  [rbp-20], 1
-        sub     DWORD  [rbp-24], 1
-.L53:
-        mov     eax, DWORD  [rbp-20]
-        cmp     eax, DWORD  [rbp-24]
-        jl      .L54
-        mov     eax, DWORD  [rbp-4]
-        cdqe
-        add     QWORD  [rbp-16], rax
-.L48:
-        mov     rax, QWORD  [rbp-16]
-        mov     BYTE  [rax], 0
-.L29:
-        mov     rax, QWORD  [rbp-72]
+atod:
+%define atod_res [rbp-8]
+%define atod_sign [rbp-16]
+%define atod_exp [rbp-24]
+%define atod_exp_sign [rbp-32]
+%define atod_str [rbp-42]
+        push    rbp
+        mov     rbp, rsp
+        sub     rsp, 48
+        mov     qword atod_res, 0
+        mov     qword atod_sign, 1
+        mov     qword atod_str, rdi
+        mov     rsi, rdi
+        mov     al, byte [rsi]
+        cmp     al, '-'
+        jne     .sign_end
+.sign_start:
+        mov     qword atod_sign, -1
+        inc     rsi
+.sign_end:
+        jmp     .while_0_test
+.while_0_loop:
+        mov     rax, 10
+        cvtsi2sd xmm0, rax
+        movsd   xmm1, qword atod_res
+        mulsd   xmm1, xmm0
+        xor     rax, rax
+        mov     al, byte [rsi]
+        inc     rsi
+        sub     al, '0'
+        cvtsi2sd xmm0, rax
+        addsd   xmm1, xmm0
+        movsd   qword atod_res, xmm1
+.while_0_test:
+        xor     rax, rax
+        mov     al, byte [rsi] 
         mov     rdi, rax
-        call    Strlen
-        mov     DWORD  [rbp-28], eax
-        mov     eax, DWORD  [rbp-28]
+        mov     qword atod_str, rsi
+        call    isDigit
+        mov     rsi, qword atod_str
+        test    rax, rax
+        jne     .while_0_loop  
+
+        mov     al, byte [rsi]
+        cmp     al, '.'
+        jne     .not_integer
+.is_integer:
+        inc     rsi
+        mov     qword atod_exp, 0
+        jmp     .while_1_test
+
+.while_1_loop:
+        mov     rax, 10
+        cvtsi2sd xmm0, rax
+        movsd   xmm1, qword atod_res
+        mulsd   xmm1, xmm0
+        xor     rax, rax
+        mov     al, byte [rsi]
+        inc     rsi
+        sub     al, '0'
+        cvtsi2sd xmm0, rax
+        addsd   xmm1, xmm0
+        movsd   qword atod_res, xmm1
+        dec     qword atod_exp      
+.while_1_test:
+        xor     rax, rax
+        mov     al, byte [rsi] 
+        mov     rdi, rax
+        mov     qword atod_str, rsi
+        call    isDigit
+        mov     rsi, qword atod_str
+        test    rax, rax
+        jne     .while_1_loop
+
+        mov     rax, 10
+        cvtsi2sd xmm0, rax
+        cvtsi2sd xmm1, qword atod_exp
+        call    pow
+        movsd   xmm1, qword atod_res
+        mulsd   xmm1, xmm0
+        movsd   qword atod_res, xmm1
+.not_integer:
+        mov     al, byte [rsi]
+        cmp     al, 'e'
+        jne     .exit
+.is_exponent:
+        inc     rsi
+        mov     qword atod_str, rsi
+        mov     rdi, rsi
+        call    atod
+        movapd  xmm1, xmm0
+        mov     rax, 10
+        cvtsi2sd xmm0, rax
+        call    pow
+        movsd   xmm1, qword atod_res
+        mulsd   xmm1, xmm0
+        movsd   qword atod_res, xmm1
+
+.exit:  movsd   xmm0, atod_res
+        cvtsi2sd xmm1, qword atod_sign
+        mulsd   xmm0, xmm1
         leave
         ret
+
+

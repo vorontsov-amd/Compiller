@@ -351,10 +351,10 @@ node_t* GetConditions(List<node_t>& programm)
 	case DataType::JB:
 		expression = new node_t(NodeType::OPERATOR, DataType::JB, "<", left_op, right_op);
 		break;
-	case DataType::JAE:
+	case DataType::JBE:
 		expression = new node_t(NodeType::OPERATOR, DataType::JBE, "<=", left_op, right_op);
 		break;
-	case DataType::JBE:
+	case DataType::JAE:
 		expression = new node_t(NodeType::OPERATOR, DataType::JAE, ">=", left_op, right_op);
 		break;
 	case DataType::JNE:

@@ -67,6 +67,9 @@ namespace CMD
     cmd_t MOV_RDX_RAX = 0x4889c2;
     cmd_t MOV_RDI_1 = 0x48c7c701000000;
     cmd_t MOV_RAX_1 = 0x48c7c001000000;
+    cmd_t MOV_RDX_31 = 0x48c7c21f000000;
+    cmd_t XOR_RAX_RAX = 0x4831c0;
+    cmd_t INC_RDX = 0x48ffc2;
     
     correct_t CALL_CORRECT = -0x5;
 };
@@ -178,6 +181,7 @@ struct Stubs
     addr_t strlen_addres;
     addr_t floor_addres;
     addr_t dtoa_addres;
+    addr_t atod_addres;
     bool is_loading = true;
     bool rewind_if = false;
     bool rewind_const = false;

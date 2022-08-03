@@ -14,6 +14,7 @@ void TranslateToAsm(List<DifferTree>& proga)
 
     WriteELFHeader(stubs, machine_code);
     WritePreamble(fasm, proga, stubs, machine_code);
+    LOX
     TranslateProcessing(fasm, proga, stubs, machine_code);
     LOX
     LOX
@@ -42,8 +43,13 @@ void TranslateToAsm(List<DifferTree>& proga)
     LOX
 
     FILE* out = fopen("out", "wb");    
+    assert(out);
+    LOX
     fwrite(machine_code.ByteCode(), 1, machine_code.Size(), out);
+    LOX
     fclose(fasm);
+    fclose(out);
+    LOX
 }
 
 void WriteELFHeader(Stubs& stubs, ByteArray& machine_code)
@@ -168,7 +174,10 @@ void PreambleData(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& 
     }
     fputs("buffer: dq 0.0\n", fasm);
     machine_code.Append(0.0);
-    fputs("str: dd 0\n", fasm);
+    fputs("str: times 32 db 0\n", fasm);
+    machine_code.Append(0U);
+    machine_code.Append(0U);
+    machine_code.Append(0U);
     machine_code.Append(0U);
 }
 
@@ -185,15 +194,6 @@ void WriteConstant(FILE* fasm, List<DifferTree> proga, Stubs& stubs, ByteArray& 
         proga.PopFront();
     }
 }
-
-// void StrToHex(const char* str, ByteArray& machine_code)
-// {
-//     for (int i = 0; str[i] != '\0'; i++)
-//     {
-//         machine_code.Append(str[i]);
-//     }
-//     machine_code.Append(0x00);
-// }
 
 void SearchConst(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code)
 {
@@ -241,6 +241,8 @@ void TranslateProcessing(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, Byte
     
     WriteProgrammProlog(fasm, proga, stubs, machine_code);
 
+    LOX
+
     int size = lst.Size();
     DifferTree function;
     for (int i = 0; i < size; i++)
@@ -253,12 +255,16 @@ void TranslateProcessing(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, Byte
 
     WriteStdFunctions(stubs, machine_code);
 
+    LOX
+
     uint64_t end_text = machine_code.Size();
 
     if (stubs.is_loading)
     {
         stubs.ElfStubs.text_stubs.p_size = end_text - begin_text;
     }
+
+    LOX
 }
 
 void VerifyDefFunc(node_t* function)
@@ -283,6 +289,8 @@ void TreeTranslate(FILE* fasm, DifferTree& function, Stubs& stubs, ByteArray& ma
 
     const char* funcname = func->Name();
 
+    LOX
+
     TranslateOpSequence(fasm, param, func->GetRight(), funcname, offset, stubs, machine_code);
 
     node_t null(NodeType::NUMBER, DataType::CONSTANT, 0.0);
@@ -301,6 +309,8 @@ List<variable>* WriteFuncProlog(FILE* fasm, node_t* func, Stubs& stubs, ByteArra
     
     List<variable>* variables = FillListVariables(func);
 
+    LOX
+
     fputs("\t\tpush\trbp\n", fasm);
     machine_code.Append(CMD::PUSH_RBP, 1);
     fputs("\t\tmov\t\trbp, rsp\n", fasm);
@@ -310,7 +320,12 @@ List<variable>* WriteFuncProlog(FILE* fasm, node_t* func, Stubs& stubs, ByteArra
     fprintf(fasm, "\t\tsub\t\trsp, %d\n", size_stk_frame);
     AppendSubRspNum(size_stk_frame, machine_code);
 
+    LOX
+
     CopyParametrsToStack(fasm, variables, machine_code);
+
+    LOX
+
     return variables;
 }
 
@@ -410,6 +425,7 @@ uint32_t SizeStackFrame(node_t* func, List<variable>* variables)
 void CopyParametrsToStack(FILE* fasm, List<variable>* variables, ByteArray& machine_code)
 {
     List<variable>* lst = new List<variable>(*variables);
+    LOX
     for (int i = 0, size = lst->Size(); i < size; i++)
     {
         variable var = lst->ShowFront();
@@ -447,7 +463,7 @@ void WriteFuncEpilog(FILE* fasm, List<variable>* param, node_t* node, const char
             fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", offset);
             AppendMovsdXmm0Var(offset, machine_code);
             fprintf(fasm, "\t\tmovsd\tqword [rax], xmm0\n");
-            machine_code.Append(CMD::MOVSD_XMM0_VAR, 4);
+            machine_code.Append(CMD::MOVSD_VAR_XMM0, 4);
         }
         param->PopFront();
     }
@@ -480,7 +496,7 @@ void TranslateOp(FILE* fasm, List<variable>* param, node_t* node, const char* fu
         TranslateCallPrintf(fasm, param, node, funcname, stubs, machine_code);
         break;
     case DataType::SCANF:
-        TranslateCallScanf(fasm, param, node, funcname, machine_code);
+        TranslateCallScanf(fasm, param, node, funcname, stubs, machine_code);
         break;
     case DataType::SQRT:
         TransateCallSqtr(fasm, param, node, funcname, stubs, machine_code);
@@ -605,7 +621,7 @@ void TranslateMov(FILE* fasm, List<variable>* param, node_t* node, const char* f
     AppendMovsdVarXmm0(offset, machine_code);
 }
 
-void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, ByteArray& machine_code)
+void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code)
 {
     node = node->GetRight();
 
@@ -616,10 +632,29 @@ void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, const cha
         node = node->GetLeft();
     }
 
-    fprintf(fasm, "\t\tmov\t\trdi, scan_double\n");
-    fprintf(fasm, "\t\tlea\t\trsi, [rbp - %ld]\n", OffsetVariable(lst, node));
-    fprintf(fasm, "\t\tmov\t\teax, 1\n");
-    fprintf(fasm, "\t\tcall\tscanf\n");
+
+    uint64_t offset = OffsetVariable(lst, node);
+    fprintf(fasm, "\t\tmov\t\trdx, 31\n");
+    fprintf(fasm, "\t\txor\t\trax, rax\n");
+    fprintf(fasm, "\t\txor\t\trdi, rdi\n");
+    fprintf(fasm, "\t\tmov\t\trdi, str\n");
+    fprintf(fasm, "\t\tsyscall\n");
+    fprintf(fasm, "\t\tmov\t\trdi, str\n");
+    fprintf(fasm, "\t\tcall\t\tatod\n");
+    fprintf(fasm, "\t\tmovsd\t\tqword [rbp - %ld], xmm0\n", offset);
+
+
+
+
+    machine_code.Append(CMD::MOV_RDX_31, 7);
+    machine_code.Append(CMD::XOR_RAX_RAX, 3);
+    machine_code.Append(CMD::XOR_RDI_RDI, 3);
+    AppendMovRsiStr(stubs, machine_code);
+    machine_code.Append(CMD::SYSCALL, 2);
+
+    AppendMovRdiStr(stubs, machine_code);
+    AppendCallFunc("atod", stubs, machine_code);
+    AppendMovsdVarXmm0(offset, machine_code);
 
     for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
     {
@@ -681,15 +716,17 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
         node = node->GetLeft();
     }
 
-    AppendAddRspNum(8, machine_code);
 
     uint64_t offset = OffsetVariable(param, node);
-    fprintf(fasm, "\t\tmov\t\trdi, print_double\n");
+    fprintf(fasm, "\t\tmov\t\trdi, str\n");
     fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", offset);
-    fprintf(fasm, "\t\tmov\t\teax, 1\n");
-    fprintf(fasm, "\t\tcall\tprintf\n");
+    fprintf(fasm, "\t\tcall\tdtoa\n");
+    fprintf(fasm, "\t\tmov\t\trdx, rax\n");
+    fprintf(fasm, "\t\tmov\t\trdi, 1\n");
+    fprintf(fasm, "\t\tmov\t\trax, 1\n");
+    fprintf(fasm, "\t\tmov\t\trsi, str\n");
 
-    AppendSubRspNum(8, machine_code);
+
 
     AppendMovsdXmm0Var(offset, machine_code);
     AppendMovRdiStr(stubs, machine_code);
@@ -701,7 +738,6 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
     machine_code.Append(CMD::SYSCALL, 2);
     
 
-
     for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
     {
         node_t* node = StackNodePtr.ShowBack();
@@ -712,8 +748,9 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
         StackNodePtr.PopBack();
     }
 
-    fprintf(fasm, "\t\tmov\t\trdi, 10d\n");  
-    fprintf(fasm, "\t\tcall\tputchar\n");
+
+    // fprintf(fasm, "\t\tmov\t\trdi, 10d\n");  
+    // fprintf(fasm, "\t\tcall\tputchar\n");
 }
 
 void TranslateWhile(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code)
@@ -1193,16 +1230,34 @@ void WriteDtoa(Stubs& stubs, ByteArray& machine_code)
 
     LOX
     
-    FILE* func = fopen("all", "rb");
-    uint8_t* all = new uint8_t[0x5f6] {0};
-    fread(all, 1, 0x5f6, func);
+    FILE* func = fopen("all_1", "rb");
+    try
+    {
+        uint8_t* all = new uint8_t[0x5b3] {0};
+        fread(all, 1, 0x5b3, func);
 
-    stubs.dtoa_addres = machine_code.Vaddr() + 0x13c;
-    stubs.labels.PushBack(Label("dtoa", stubs.dtoa_addres));
-    stubs.labels.PushBack(Label("pow", machine_code.Vaddr() ));
-    machine_code.AppendBin(all, 0x5f6);   
+        stubs.pow_addres = machine_code.Vaddr();
+        stubs.dtoa_addres = stubs.pow_addres + 0x4f;
+        stubs.atod_addres = stubs.pow_addres + 0x476;
+
+        //stubs.dtoa_addres = machine_code.Vaddr() + 0x4f;
+        stubs.labels.PushBack(Label("dtoa", stubs.dtoa_addres));
+        stubs.labels.PushBack(Label("pow", stubs.pow_addres));
+        stubs.labels.PushBack(Label("atod", stubs.atod_addres));
+        
+        LOX
+
+        machine_code.AppendBin(all, 0x5b3);
+    }
+    catch(const std::bad_alloc& e)
+    {
+        std::cout << "bad allocated\n";
+    }
+   
+
+    LOX
 
     fclose(func);
-    delete[] all;
+    //delete[] all;
 
 }
