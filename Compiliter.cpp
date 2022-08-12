@@ -134,8 +134,8 @@ const char* MainFuncName(List<DifferTree>& proga)
 
 void WritePreamble(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& machine_code)
 {
-    fputs("global main\n", fasm);
-    fputs("extern printf, scanf, putchar\n\n", fasm);
+    fputs("global _start\n", fasm);
+    fputs("extern dtoa, atod, pow\n\n", fasm);
     PreambleData(fasm, proga, stubs, machine_code);
     LOX
     PreambleRodata(fasm, proga, stubs, machine_code);
@@ -496,7 +496,7 @@ void TranslateOp(FILE* fasm, List<variable>* param, node_t* node, const char* fu
         TranslateCallPrintf(fasm, param, node, funcname, stubs, machine_code);
         break;
     case DataType::SCANF:
-        TranslateCallScanf(fasm, param, node, funcname, stubs, machine_code);
+        TranslateCallScanf(fasm, param, node, stubs, machine_code);
         break;
     case DataType::SQRT:
         TransateCallSqtr(fasm, param, node, funcname, stubs, machine_code);
@@ -621,10 +621,22 @@ void TranslateMov(FILE* fasm, List<variable>* param, node_t* node, const char* f
     AppendMovsdVarXmm0(offset, machine_code);
 }
 
-void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code)
+void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, Stubs& stubs, ByteArray& machine_code)
 {
     node = node->GetRight();
+    if (node)
+    {
+        TranslateScanfMoreParametrs(fasm, lst, node, stubs, machine_code);
+    }
+    else
+    {
+        TranslateScanfReturn(fasm, node, stubs, machine_code);
+    }
+}
 
+
+void TranslateScanfMoreParametrs(FILE* fasm, List<variable>* lst, node_t* node, Stubs& stubs, ByteArray& machine_code)
+{
     List<node_t*> StackNodePtr; 
     while (node && (node->dType() == DataType::COMMA))
     {
@@ -632,41 +644,60 @@ void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, const cha
         node = node->GetLeft();
     }
 
-
     uint64_t offset = OffsetVariable(lst, node);
+    ScanOne(fasm, offset, stubs, machine_code);  
+
+    for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
+    {
+        node_t* node = StackNodePtr.ShowBack();
+        offset = OffsetVariable(lst, node->GetRight());
+        ScanOne(fasm, offset, stubs, machine_code);
+        StackNodePtr.PopBack();
+    }
+}
+
+void TranslateScanfReturn(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code)
+{
+    const uint32_t BUF = stubs.ElfStubs.data_stubs.p_vaddp;
+    
+    TranslateBaseScanf(fasm, stubs, machine_code);
+
+    fprintf(fasm, "\t\tmovsd\tqword [buffer], xmm0\n");
+    fprintf(fasm, "\t\tpush\tqword [buffer]\n");
+
+    machine_code.Append(CMD::MOVSD_M64_XMM0, 5);
+    machine_code.Append(BUF);
+    machine_code.Append(CMD::PUSH_M64, 3);
+    machine_code.Append(BUF);
+}
+
+
+void ScanOne(FILE* fasm, uint64_t offset, Stubs& stubs, ByteArray& machine_code)
+{
+    TranslateBaseScanf(fasm, stubs, machine_code);
+    fprintf(fasm, "\t\tmovsd\tqword [rbp - %ld], xmm0\n", offset);
+    AppendMovsdVarXmm0(offset, machine_code);
+}
+
+void TranslateBaseScanf(FILE* fasm, Stubs& stubs, ByteArray& machine_code)
+{
     fprintf(fasm, "\t\tmov\t\trdx, 31\n");
     fprintf(fasm, "\t\txor\t\trax, rax\n");
     fprintf(fasm, "\t\txor\t\trdi, rdi\n");
     fprintf(fasm, "\t\tmov\t\trdi, str\n");
     fprintf(fasm, "\t\tsyscall\n");
     fprintf(fasm, "\t\tmov\t\trdi, str\n");
-    fprintf(fasm, "\t\tcall\t\tatod\n");
-    fprintf(fasm, "\t\tmovsd\t\tqword [rbp - %ld], xmm0\n", offset);
-
-
-
+    fprintf(fasm, "\t\tcall\tatod\n");
 
     machine_code.Append(CMD::MOV_RDX_31, 7);
     machine_code.Append(CMD::XOR_RAX_RAX, 3);
     machine_code.Append(CMD::XOR_RDI_RDI, 3);
     AppendMovRsiStr(stubs, machine_code);
     machine_code.Append(CMD::SYSCALL, 2);
-
     AppendMovRdiStr(stubs, machine_code);
     AppendCallFunc("atod", stubs, machine_code);
-    AppendMovsdVarXmm0(offset, machine_code);
-
-    for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
-    {
-        node_t* node = StackNodePtr.ShowBack();
-        fprintf(fasm, "\t\tmov\t\trdi, scan_double\n");
-        fprintf(fasm, "\t\tlea\t\trsi, [rbp - %ld]\n", OffsetVariable(lst, node->GetRight()));
-        fprintf(fasm, "\t\tmov\t\teax, 1\n");
-        fprintf(fasm, "\t\tcall\tscanf\n");
-
-        StackNodePtr.PopBack();
-    }
 }
+
 
 uint64_t OffsetVariable(List<variable>* param, node_t* var_ptr)
 {
@@ -716,8 +747,22 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
         node = node->GetLeft();
     }
 
-
     uint64_t offset = OffsetVariable(param, node);
+    PrintOne(fasm, offset, stubs, machine_code);
+    
+    for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
+    {
+        node_t* node = StackNodePtr.ShowBack();
+        offset = OffsetVariable(param, node->GetRight());
+        PrintOne(fasm, offset, stubs, machine_code);
+        StackNodePtr.PopBack();
+    }
+    PrintCharacter(fasm, '\n', machine_code);
+}
+
+
+void PrintOne(FILE* fasm, uint64_t offset, Stubs& stubs, ByteArray& machine_code)
+{
     fprintf(fasm, "\t\tmov\t\trdi, str\n");
     fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", offset);
     fprintf(fasm, "\t\tcall\tdtoa\n");
@@ -725,7 +770,7 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
     fprintf(fasm, "\t\tmov\t\trdi, 1\n");
     fprintf(fasm, "\t\tmov\t\trax, 1\n");
     fprintf(fasm, "\t\tmov\t\trsi, str\n");
-
+    fprintf(fasm, "\t\tsyscall\n");
 
 
     AppendMovsdXmm0Var(offset, machine_code);
@@ -736,22 +781,32 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
     machine_code.Append(CMD::MOV_RDI_1, 7);
     AppendMovRsiStr(stubs, machine_code);
     machine_code.Append(CMD::SYSCALL, 2);
-    
 
-    for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
-    {
-        node_t* node = StackNodePtr.ShowBack();
-        fprintf(fasm, "\t\tmov\t\trdi, print_double\n");
-        fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", OffsetVariable(param, node->GetRight()));
-        fprintf(fasm, "\t\tmov\t\teax, 1\n");
-        fprintf(fasm, "\t\tcall\tprintf\n");
-        StackNodePtr.PopBack();
-    }
-
-
-    // fprintf(fasm, "\t\tmov\t\trdi, 10d\n");  
-    // fprintf(fasm, "\t\tcall\tputchar\n");
+    PrintCharacter(fasm, ' ', machine_code);
 }
+
+void PrintCharacter(FILE* fasm, uint32_t character, ByteArray& machine_code)
+{
+    fprintf(fasm, "\t\tmov\t\trax, %d\n", character);
+    fprintf(fasm, "\t\tpush\trax\n");
+    fprintf(fasm, "\t\tmov\t\trdx, 1\n");
+    fprintf(fasm, "\t\tmov\t\trdi, 1\n");
+    fprintf(fasm, "\t\tmov\t\trax, 1\n");
+    fprintf(fasm, "\t\tmov\t\trsi, rsp\n");
+    fprintf(fasm, "\t\tsyscall\n");
+    fprintf(fasm, "\t\tpop\t\trax\n");
+
+    machine_code.Append(CMD::MOV_RAX_CHARACTER, 3);
+    machine_code.Append(character);
+    machine_code.Append(CMD::PUSH_RAX, 1);
+    machine_code.Append(CMD::MOV_RDX_1, 7);
+    machine_code.Append(CMD::MOV_RDI_1, 7);
+    machine_code.Append(CMD::MOV_RAX_1, 7);
+    machine_code.Append(CMD::MOV_RSI_RSP, 3);
+    machine_code.Append(CMD::SYSCALL, 2);
+    machine_code.Append(CMD::POP_RAX, 1);
+}
+
 
 void TranslateWhile(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code)
 {
@@ -999,7 +1054,7 @@ void TranslateExp(FILE* fasm, List<variable>* param, node_t* node, const char* f
             machine_code.Append(CMD::FSTP_M64, 3);
             machine_code.Append(BUF);
             fprintf(fasm, "\t\tpush\tqword [buffer]\n");
-            machine_code.Append(CMD::PUSH_M64, 1);
+            machine_code.Append(CMD::PUSH_M64, 3);
             machine_code.Append(BUF);
         }
         TranslateExp(fasm, param, node->GetRight(), funcname, stubs, machine_code);
@@ -1094,6 +1149,9 @@ void TranslateExp(FILE* fasm, List<variable>* param, node_t* node, const char* f
     case DataType::SQRT:
         TransateCallSqtr(fasm, param, node, funcname, stubs, machine_code);
         break;   
+    case DataType::SCANF:
+        TranslateCallScanf(fasm, param, node, stubs, machine_code);
+        break;
     default:
         break;
     }
@@ -1104,7 +1162,7 @@ void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteA
     const char* programm_name = MainFuncName(tree);
     assert(programm_name);
     
-    fprintf(fasm, "main:\n");
+    fprintf(fasm, "_start:\n");
     fprintf(fasm, "\t\tfinit\n");
     fprintf(fasm, "\t\tcall\t%s\n", programm_name);
 

@@ -70,6 +70,10 @@ namespace CMD
     cmd_t MOV_RDX_31 = 0x48c7c21f000000;
     cmd_t XOR_RAX_RAX = 0x4831c0;
     cmd_t INC_RDX = 0x48ffc2;
+    cmd_t MOV_RAX_CHARACTER = 0x48c7c0;
+    cmd_t MOV_RDX_1 = 0x48c7c201000000;
+    cmd_t MOV_RSI_RSP = 0x4889e6;
+    cmd_t POP_RAX = 0x58;
     
     correct_t CALL_CORRECT = -0x5;
 };
