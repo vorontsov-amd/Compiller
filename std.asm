@@ -1,5 +1,5 @@
 
-global dtoa, atod
+global dtoa, atod, pow
 section .text
 
 pow:
