@@ -5,7 +5,8 @@
 
 ByteArray::ByteArray()
 {
-    array = (char*)calloc(1024, 1);
+    array = new char[1024] {};
+
     size = 1024;
     cur_index = 0;
 }
@@ -13,7 +14,7 @@ ByteArray::ByteArray()
 
 ByteArray::ByteArray(const char* _array, const size_t _size)
 {
-    array = (char*)calloc(_size, 1);
+    array = new char[_size] {};
     memcpy(array, _array, _size);
     size = _size;
     cur_index = 0;
@@ -22,8 +23,11 @@ ByteArray::ByteArray(const char* _array, const size_t _size)
 
 ByteArray::~ByteArray()
 {
-    if (array) free(array);
-    array = nullptr;
+    if (array)
+    {
+        delete[] array;
+        array = nullptr;
+    }
 }
 
 
@@ -41,10 +45,13 @@ ByteArray::~ByteArray()
 
 index_t ByteArray::Append(const Elf64_Ehdr ehdr)
 {
-    if (cur_index == size - 1)
+    if (cur_index + sizeof(ehdr) >= size - 1)
     {
-        array = (char*)realloc(array, 2 * size);
+        char* new_array = new char[2 * size] {};
+        memcpy(new_array, array, size);
         size = 2 * size;
+        delete[] array;
+        array = new_array;
     }
     memcpy(array + cur_index, &ehdr, sizeof(ehdr));
     cur_index += sizeof(ehdr);
@@ -55,10 +62,13 @@ index_t ByteArray::Append(const Elf64_Ehdr ehdr)
 
 index_t ByteArray::Append(const Elf64_Phdr phdr)
 {
-    if (cur_index == size - 1)
+    if (cur_index  + sizeof(phdr) >= size - 1)
     {
-        array = (char*)realloc(array, 2 * size);
+        char* new_array = new char[2 * size] {};
+        memcpy(new_array, array, size);
         size = 2 * size;
+        delete[] array;
+        array = new_array;
     }
     memcpy(array + cur_index, &phdr, sizeof(phdr));
     cur_index += sizeof(phdr);
@@ -83,10 +93,14 @@ index_t ByteArray::Append(const Elf64_Phdr phdr)
 
 index_t ByteArray::Append(const double num)
 {
-    if (cur_index == size - 1)
+    
+    if (cur_index + sizeof(num) >= size - 1)
     {
-        array = (char*)realloc(array, 2 * size);
+        char* new_array = new char[2 * size] {};
+        memcpy(new_array, array, size);
         size = 2 * size;
+        delete[] array;
+        array = new_array;
     }
     memcpy(array + cur_index, &num, sizeof(num));
     cur_index += sizeof(num);
@@ -96,10 +110,13 @@ index_t ByteArray::Append(const double num)
 
 index_t ByteArray::Append(const addr_t num)
 {    
-    if (cur_index == size - 1)
+    if (cur_index + sizeof(num) >= size - 1)
     {
-        array = (char*)realloc(array, 2 * size);
+        char* new_array = new char[2 * size] {};
+        memcpy(new_array, array, size);
         size = 2 * size;
+        delete[] array;
+        array = new_array;
     }
     memcpy(array + cur_index, &num, sizeof(num));
     cur_index += sizeof(num);
@@ -109,10 +126,16 @@ index_t ByteArray::Append(const addr_t num)
 
 index_t ByteArray::AppendBin(const uint8_t* func, size_t len)
 {    
+    LOX
+
     if (cur_index + len >= size - 1)
     {
-        array = (char*)realloc(array, 2 * size);
-        size = 2 * size;
+        size_t new_size = (size + len > 2 * size) ? size + len : 2 * size;
+        char* new_array = new char[new_size] {};
+        memcpy(new_array, array, size);
+        size = new_size;
+        delete[] array;
+        array = new_array;
     }
     LOX
 
@@ -179,10 +202,6 @@ addr_t Label::Addres() const
 
 Label& Label::operator=(const Label& lbl)
 {
-    if (name) 
-    {
-        delete[] name;
-    }
     if (lbl.name)
     {
         name = new char[strlen(lbl.name) + 1];
@@ -190,7 +209,8 @@ Label& Label::operator=(const Label& lbl)
     }
     else
     {
-        name = nullptr;
+        name = new char[1];
+        name[0] = '\0';
     }
 
     addr = lbl.addr;
@@ -242,13 +262,15 @@ void AppendPushVar(uint32_t number, ByteArray& machine_code)
 {
     if (number < 0x80)
     {
-        uint32_t cmd = CMD::PUSH_VAR_L | number;
-        machine_code.Append(cmd, 4);
+        uint8_t offset = -number % 0x100;
+        uint32_t cmd = CMD::PUSH_VAR_L | offset;
+        machine_code.Append(cmd, 3);
     }
     else
     {
-        uint64_t cmd = CMD::PUSH_VAR_B | number;
-        machine_code.Append(cmd, 7);
+        uint32_t offset = -number;
+        uint64_t cmd = CMD::PUSH_VAR_B | offset;
+        machine_code.Append(cmd, 6);
     }
 }
 
@@ -344,7 +366,9 @@ void AppendMovRsiStr(Stubs& stubs, ByteArray& machone_code)
 void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code)
 {
     Label lbl = SearchLabel(funcname, stubs.labels);
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr() - 5;
+    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
+
+    distance = (distance > 0) ? distance - 5 : distance + 5;
 
     machine_code.Append(CMD::CALL_ADDR, 1);
     machine_code.Append(distance);
@@ -355,8 +379,9 @@ void AppendJmpLabel(const char* labelname, Stubs& stubs, ByteArray& machine_code
 {
     Label lbl = SearchLabel(labelname, stubs.labels);
 
+    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
 
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr() - 5;
+    distance = (distance > 0) ? distance - 5 : distance + 5;
 
     machine_code.Append(CMD::JMP_ADDR, 1);
     machine_code.Append(distance);
@@ -368,25 +393,38 @@ void AppendJxxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray
     
     Label lbl = SearchLabel(labelname, stubs.labels);
     
+    puts("FUCK");
     uint64_t jmp = 0;
     switch (node->dType())
     {
     case DataType::JE:
+            puts("JE");
+
         jmp = CMD::JE_ADDR;
         break;
     case DataType::JNE:
+            puts("JNE");
+
         jmp = CMD::JNE_ADDR;
         break;
     case DataType::JA:
+            puts("JA");
+
         jmp = CMD::JA_ADDR;
         break;
     case DataType::JAE:
+            puts("JAE");
+
         jmp = CMD::JAE_ADDR;
         break;
     case DataType::JB:
+            puts("JB");
+
         jmp = CMD::JB_ADDR;
         break;
     case DataType::JBE:
+        puts("JBE");
+        puts(node->value().string_ptr);
         jmp = CMD::JBE_ADDR;
         break;
     default:
@@ -396,7 +434,8 @@ void AppendJxxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray
 
 
 
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr() + 1;
+    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
+    distance = (distance > 0) ? distance - 6 : distance + 6;
 
     machine_code.Append(jmp, 2);
     machine_code.Append(distance);
@@ -435,7 +474,9 @@ void AppendJnxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray
         break;
     }
 
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr() - 6;
+
+    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
+    distance = (distance > 0) ? distance - 6 : distance + 6;
 
     machine_code.Append(jmp, 2);
     machine_code.Append(distance);

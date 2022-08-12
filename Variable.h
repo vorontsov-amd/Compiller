@@ -1,11 +1,12 @@
 #pragma once
 #include <iostream>
 #include "data_t.h"
+#include <cassert>
 
 class variable
 {
 private:
-    node_t* var;
+    char* var;
     bool is_link;
     uint64_t offset;
 public:
@@ -16,4 +17,5 @@ public:
     uint64_t Offset() const;
     const char* Name() const;
     bool IsLink() const;
+    variable& operator=(const variable& var);
 };

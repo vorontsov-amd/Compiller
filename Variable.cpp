@@ -5,13 +5,17 @@ variable::variable()
 {
     var = nullptr;
     is_link = false;
-    offset = 0;
+    offset = 0xBAD00BAD;
 }
 
 
 variable::variable(node_t* _var, bool _is_link, uint64_t _offset)
 {
-    var = _var;
+    assert(_var);
+    const char* name = _var->Name();
+    assert(name);
+    var = new char[strlen(name) + 1];
+    strcpy(var, name);
     is_link = _is_link;
     offset = _offset;
 }
@@ -32,11 +36,25 @@ uint64_t variable::Offset() const
 
 const char* variable::Name() const
 {
-    return var->value().string_ptr;
+    return var;
 }
 
 
 bool variable::IsLink() const
 {
     return is_link;
+}
+
+
+variable& variable::operator=(const variable& _var)
+{
+    const char* name = _var.var;
+    if (name) 
+    {
+        var = new char[strlen(name) + 1];
+        strcpy(var, name);
+    }
+    is_link = _var.is_link;
+    offset = _var.offset;
+    return *this;
 }

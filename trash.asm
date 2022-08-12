@@ -1,6 +1,8 @@
-
-global dtoa, atod, pow
+global _start
 section .text
+_start: 
+        call atod
+
 
 pow:
         push    rbp

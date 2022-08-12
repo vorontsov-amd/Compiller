@@ -67,6 +67,13 @@ namespace CMD
     cmd_t MOV_RDX_RAX = 0x4889c2;
     cmd_t MOV_RDI_1 = 0x48c7c701000000;
     cmd_t MOV_RAX_1 = 0x48c7c001000000;
+    cmd_t MOV_RDX_31 = 0x48c7c21f000000;
+    cmd_t XOR_RAX_RAX = 0x4831c0;
+    cmd_t INC_RDX = 0x48ffc2;
+    cmd_t MOV_RAX_CHARACTER = 0x48c7c0;
+    cmd_t MOV_RDX_1 = 0x48c7c201000000;
+    cmd_t MOV_RSI_RSP = 0x4889e6;
+    cmd_t POP_RAX = 0x58;
     
     correct_t CALL_CORRECT = -0x5;
 };
@@ -93,10 +100,11 @@ public:
     index_t Append(const Elf64_Ehdr ehdr);
     index_t Append(const Elf64_Phdr phdr);
     index_t Append(const uint32_t ch);
+    index_t Append(const uint8_t num);
     index_t Append(const double num);
     index_t Append(const char* func, size_t len);
     //index_t Append(const uint64_t num);
-    template <typename T> index_t Append(const T cmd, size_t size);
+    template <typename T> index_t Append(const T cmd, size_t size_cmd);
     index_t AppendBin(const uint8_t* cmd, size_t size);
 
 
@@ -110,16 +118,16 @@ public:
 };
 
 
-template <typename T> index_t ByteArray::Append(const T cmd, size_t size)
+template <typename T> index_t ByteArray::Append(const T cmd, size_t size_cmd)
 {
-    if (cur_index == size - 1)
+    if (cur_index + size_cmd >= size - 1)
     {
         array = (char*)realloc(array, 2 * size);
         size = 2 * size;
     }
-    memcpy(array + cur_index, &cmd, size);
-    memreverse(array + cur_index, size);
-    cur_index += size;
+    memcpy(array + cur_index, &cmd, size_cmd);
+    memreverse(array + cur_index, size_cmd);
+    cur_index += size_cmd;
     return cur_index;
 }
 
@@ -177,10 +185,13 @@ struct Stubs
     addr_t strlen_addres;
     addr_t floor_addres;
     addr_t dtoa_addres;
+    addr_t atod_addres;
     bool is_loading = true;
     bool rewind_if = false;
     bool rewind_const = false;
+    bool rewind_const_expr = false;
     bool rewind_while = false;
+    bool rewind_init = false;
 };
 
 

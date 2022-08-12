@@ -130,7 +130,7 @@ node_t* GetCallFunc(List<node_t>& programm)
 node_t* GetFunc(List<node_t>& programm, node_t& func)
 {
 	programm.PopFront();
-	node_t* first_parametr = GetParamSequence(programm);
+	node_t* first_parametr = GetArgumentSequence(programm);
 	CheckClsRoundBr(programm);
 	char* funcname = func.value().string_ptr;
 	if (strcmp(funcname, "input") == 0)
@@ -158,6 +158,19 @@ node_t* GetParamSequence(List<node_t>& programm)
 	{
 		programm.PopFront();
 		node_t* second_parametr = GetNewVar(programm);
+		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
+	}
+	return first_parametr;
+}
+
+
+node_t* GetArgumentSequence(List<node_t>& programm)
+{
+	node_t* first_parametr = GetExpression(programm);
+	while (programm.ShowFront().dType() == DataType::COMMA)
+	{
+		programm.PopFront();
+		node_t* second_parametr = GetExpression(programm);
 		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
 	}
 	return first_parametr;
@@ -351,10 +364,10 @@ node_t* GetConditions(List<node_t>& programm)
 	case DataType::JB:
 		expression = new node_t(NodeType::OPERATOR, DataType::JB, "<", left_op, right_op);
 		break;
-	case DataType::JAE:
+	case DataType::JBE:
 		expression = new node_t(NodeType::OPERATOR, DataType::JBE, "<=", left_op, right_op);
 		break;
-	case DataType::JBE:
+	case DataType::JAE:
 		expression = new node_t(NodeType::OPERATOR, DataType::JAE, ">=", left_op, right_op);
 		break;
 	case DataType::JNE:
