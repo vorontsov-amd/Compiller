@@ -17,7 +17,7 @@ int main()
 	lst.GraphDump();
 	List<DifferTree> tree = GetGrammar(lst);
     ProgrammDump(tree);  
-    //TranslateToAsm(tree);
+    TranslateToAsm(tree);
 }
 
 void ProgrammDump(List<DifferTree> tree)

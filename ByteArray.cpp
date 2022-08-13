@@ -325,6 +325,23 @@ void AppendMovsdXmm0Var(uint32_t number, ByteArray& machine_code)
 }
 
 
+void AppendMovsdXmm0TempVar(uint32_t number, ByteArray& machine_code)
+{
+    if (number < 0x80)
+    {
+        uint8_t offset = number;
+        uint64_t cmd = CMD::MOVSD_XMM0_VAR_L | offset;
+        machine_code.Append(cmd, 5);
+    }
+    else
+    {
+        uint32_t offset = number;
+        uint64_t cmd = CMD::MOVSD_XMM0_VAR_B | offset;
+        machine_code.Append(cmd, 8);
+    }
+}
+
+
 void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code)
 {
     if (number <= 0x80)

@@ -177,6 +177,20 @@ node_t* GetArgumentSequence(List<node_t>& programm)
 }
 
 
+node_t* GetInitSequence(List<node_t>& programm)
+{
+	node_t* first_parametr = GetAssign(programm);
+	while (programm.ShowFront().dType() == DataType::COMMA)
+	{
+		programm.PopFront();
+		node_t* second_parametr = GetAssign(programm);
+		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
+	}
+	return first_parametr;
+}
+
+
+
 node_t* GetNewVar(List<node_t>& programm)
 {
 	if ((programm.ShowFront().Type() == NodeType::WORD) && (strcmp(programm.ShowFront().value().string_ptr, "new") == 0))

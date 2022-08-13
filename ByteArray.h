@@ -209,6 +209,7 @@ void AppendAddRspNum(uint32_t number, ByteArray& machine_code);
 void AppendMovRaxVarPtr(uint32_t number, ByteArray& machine_code);
 void AppendMovsdVarXmm0(uint32_t number, ByteArray& machine_code);
 void AppendMovsdXmm0Var(uint32_t number, ByteArray& machine_code);
+void AppendMovsdXmm0TempVar(uint32_t number, ByteArray& machine_code);
 void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code);
 void AppendPushVar(uint32_t number, ByteArray& machine_code);
 void AppendMovRdiStr(Stubs& stubs, ByteArray& machone_code);

@@ -36,70 +36,10 @@ print_double: db '%lg ', 0x0
 section .text
 _start:
 		finit
-		call	func
+		call	func1
 		mov		rax, 60
 		xor		rdi, rdi
 		syscall
-
-func:
-		push	rbp
-		mov		rbp, rsp
-		sub		rsp, 32
-		mov		rdx, 31
-		xor		rax, rax
-		xor		rdi, rdi
-		mov		rdi, str
-		syscall
-		mov		rdi, str
-		call	atod
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 8], xmm0
-		mov		rdx, 31
-		xor		rax, rax
-		xor		rdi, rdi
-		mov		rdi, str
-		syscall
-		mov		rdi, str
-		call	atod
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 16], xmm0
-		mov		rdx, 31
-		xor		rax, rax
-		xor		rdi, rdi
-		mov		rdi, str
-		syscall
-		mov		rdi, str
-		call	atod
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 24], xmm0
-		push	qword [rbp - 24]
-		push	qword [rbp - 16]
-		push	qword [rbp - 8]
-		call	NumSol
-		add		rsp, 24
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 32], xmm0
-		push	qword [rbp - 32]
-		push	qword [rbp - 24]
-		push	qword [rbp - 16]
-		push	qword [rbp - 8]
-		call	Solve
-		add		rsp, 32
-.ret_func:
-		leave
-		ret
 
 func1:
 		push	rbp
@@ -173,6 +113,66 @@ func1:
 		comisd	xmm0, xmm1
 		jne		.while0loop
 .ret_func1:
+		leave
+		ret
+
+func:
+		push	rbp
+		mov		rbp, rsp
+		sub		rsp, 32
+		mov		rdx, 31
+		xor		rax, rax
+		xor		rdi, rdi
+		mov		rdi, str
+		syscall
+		mov		rdi, str
+		call	atod
+		movsd	qword [buffer], xmm0
+		push	qword [buffer]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
+		movsd	qword [rbp - 8], xmm0
+		mov		rdx, 31
+		xor		rax, rax
+		xor		rdi, rdi
+		mov		rdi, str
+		syscall
+		mov		rdi, str
+		call	atod
+		movsd	qword [buffer], xmm0
+		push	qword [buffer]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
+		movsd	qword [rbp - 16], xmm0
+		mov		rdx, 31
+		xor		rax, rax
+		xor		rdi, rdi
+		mov		rdi, str
+		syscall
+		mov		rdi, str
+		call	atod
+		movsd	qword [buffer], xmm0
+		push	qword [buffer]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
+		movsd	qword [rbp - 24], xmm0
+		push	qword [rbp - 24]
+		push	qword [rbp - 16]
+		push	qword [rbp - 8]
+		call	NumSol
+		add		rsp, 24
+		movsd	qword [buffer], xmm0
+		push	qword [buffer]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
+		movsd	qword [rbp - 32], xmm0
+		push	qword [rbp - 32]
+		push	qword [rbp - 24]
+		push	qword [rbp - 16]
+		push	qword [rbp - 8]
+		call	Solve
+		add		rsp, 32
+.ret_func:
 		leave
 		ret
 
