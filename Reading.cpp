@@ -130,7 +130,8 @@ node_t* GetCallFunc(List<node_t>& programm)
 node_t* GetFunc(List<node_t>& programm, node_t& func)
 {
 	programm.PopFront();
-	node_t* first_parametr = GetArgumentSequence(programm);
+	bool no_string = true;
+	node_t* first_parametr = GetArgumentSequence(programm, no_string);
 	CheckClsRoundBr(programm);
 	char* funcname = func.value().string_ptr;
 	if (strcmp(funcname, "input") == 0)
@@ -141,13 +142,18 @@ node_t* GetFunc(List<node_t>& programm, node_t& func)
 	{
 		return new node_t(NodeType::WORD, DataType::PRINTF, funcname, nullptr, first_parametr);
 	}
-	else if (strcmp(funcname, "sqrt") == 0)
+	else if (strcmp(funcname, "sqrt") == 0 && no_string)
 	{
 		return new node_t(NodeType::WORD, DataType::SQRT, funcname, nullptr, first_parametr);
 	}
-	else
+	else if (no_string)
 	{
 		return new node_t(NodeType::WORD, DataType::FUNC, funcname, nullptr, first_parametr);
+	}
+	else
+	{
+		fprintf(stderr, "Error: bad argument string in function %s\n", funcname);
+		exit(EXIT_FAILURE);
 	}
 }
 
@@ -164,29 +170,34 @@ node_t* GetParamSequence(List<node_t>& programm)
 }
 
 
-node_t* GetArgumentSequence(List<node_t>& programm)
+node_t* GetArgumentSequence(List<node_t>& programm, bool& no_string)
 {
-	node_t* first_parametr = GetExpression(programm);
+	auto GetArgument = GetExpression;
+	if (programm.ShowFront().dType() == DataType::QUOTE)
+	{
+		no_string = false;
+		programm.PopFront();
+		GetArgument = GetStr;
+	}
+	
+	node_t* first_parametr = GetArgument(programm);
 	while (programm.ShowFront().dType() == DataType::COMMA)
 	{
 		programm.PopFront();
-		node_t* second_parametr = GetExpression(programm);
+		node_t* second_parametr = GetArgument(programm);
 		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
 	}
 	return first_parametr;
 }
 
 
-node_t* GetInitSequence(List<node_t>& programm)
+node_t* GetStr(List<node_t>& programm)
 {
-	node_t* first_parametr = GetAssign(programm);
-	while (programm.ShowFront().dType() == DataType::COMMA)
-	{
-		programm.PopFront();
-		node_t* second_parametr = GetAssign(programm);
-		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
-	}
-	return first_parametr;
+	node_t* str = new node_t(programm.ShowFront());
+	str->SetDtype(DataType::CONST_STR);
+	programm.PopFront();
+	programm.PopFront();
+	return str;
 }
 
 
@@ -271,6 +282,7 @@ void CheckClsRoundBr(List<node_t>& programm)
 {
 	if (programm.ShowFront().dType() != DataType::CLS_ROUND_BR)
 	{
+		std::cout << programm.ShowFront();
 		fprintf(stderr, "Missing closing bracket ')'\n");
 		exit(EXIT_FAILURE);
 	}

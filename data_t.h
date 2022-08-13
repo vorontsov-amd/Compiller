@@ -53,6 +53,8 @@ namespace DataType
 		DEFINE,
 		NEW_VAR,
 		RET,
+		QUOTE,
+		CONST_STR,
 	};
 }
 
@@ -179,7 +181,12 @@ public:
 		return data.value;
 	}
 
-	NodeType::nodeType Type()
+	NodeType::nodeType Type() const
+	{
+		return type;
+	}
+
+	NodeType::nodeType& Type()
 	{
 		return type;
 	}

@@ -522,7 +522,7 @@ void TranslateOp(FILE* fasm, List<node_t>* functions, List<variable>* param, nod
         TranslateCallFunc(fasm, functions, param, node, funcname, stubs, machine_code);
         break;
     case DataType::PRINTF:
-        TranslateCallPrintf(fasm, param, node, funcname, stubs, machine_code);
+        TranslateCallPrintf(fasm, functions, param, node, funcname, stubs, machine_code);
         break;
     case DataType::SCANF:
         TranslateCallScanf(fasm, param, node, stubs, machine_code);
@@ -806,7 +806,7 @@ void TranslateRet(FILE* fasm, List<node_t>* functions, List<variable>* param, no
     delete[] labelname;
 }
 
-void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code)
+void TranslateCallPrintf(FILE* fasm, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code)
 {
     node = node->GetRight();
 
@@ -817,24 +817,29 @@ void TranslateCallPrintf(FILE* fasm, List<variable>* param, node_t* node, const 
         node = node->GetLeft();
     }
 
-    uint64_t offset = OffsetVariable(param, node);
-    PrintOne(fasm, offset, stubs, machine_code);
+    TranslateExp(fasm, functions, param, node, funcname, stubs, machine_code);
+    //uint64_t offset = OffsetVariable(param, node);
+    PrintOne(fasm, stubs, machine_code);
     
     for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
     {
         node_t* node = StackNodePtr.ShowBack();
-        offset = OffsetVariable(param, node->GetRight());
-        PrintOne(fasm, offset, stubs, machine_code);
+        //offset = OffsetVariable(param, node->GetRight());
+        TranslateExp(fasm, functions, param, node, funcname, stubs, machine_code);
+        PrintOne(fasm, stubs, machine_code);
         StackNodePtr.PopBack();
     }
     PrintCharacter(fasm, '\n', machine_code);
 }
 
 
-void PrintOne(FILE* fasm, uint64_t offset, Stubs& stubs, ByteArray& machine_code)
+void PrintOne(FILE* fasm, Stubs& stubs, ByteArray& machine_code)
 {
+    const uint32_t BUF = stubs.ElfStubs.data_stubs.p_vaddp;
+
     fprintf(fasm, "\t\tmov\t\trdi, str\n");
-    fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %ld]\n", offset);
+    fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
+    fprintf(fasm, "\t\tmovsd\txmm0, qword [buffer]\n");
     fprintf(fasm, "\t\tcall\tdtoa\n");
     fprintf(fasm, "\t\tmov\t\trdx, rax\n");
     fprintf(fasm, "\t\tmov\t\trdi, 1\n");
@@ -842,9 +847,11 @@ void PrintOne(FILE* fasm, uint64_t offset, Stubs& stubs, ByteArray& machine_code
     fprintf(fasm, "\t\tmov\t\trsi, str\n");
     fprintf(fasm, "\t\tsyscall\n");
 
-
-    AppendMovsdXmm0Var(offset, machine_code);
     AppendMovRdiStr(stubs, machine_code);
+    machine_code.Append(CMD::POP_M64, 3);
+    machine_code.Append(BUF);
+    machine_code.Append(CMD::MOVSD_XMM0_M64, 5);
+    machine_code.Append(BUF);   
     AppendCallFunc("dtoa", stubs, machine_code);
     machine_code.Append(CMD::MOV_RDX_RAX, 3);
     machine_code.Append(CMD::MOV_RAX_1, 7);

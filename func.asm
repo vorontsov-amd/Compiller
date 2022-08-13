@@ -44,59 +44,33 @@ _start:
 func:
 		push	rbp
 		mov		rbp, rsp
-		sub		rsp, 32
-		mov		rdx, 31
-		xor		rax, rax
-		xor		rdi, rdi
+		sub		rsp, 0
+		push	qword [rbp - 0]
 		mov		rdi, str
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
+		call	dtoa
+		mov		rdx, rax
+		mov		rdi, 1
+		mov		rax, 1
+		mov		rsi, str
 		syscall
-		mov		rdi, str
-		call	atod
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 8], xmm0
-		mov		rdx, 31
-		xor		rax, rax
-		xor		rdi, rdi
-		mov		rdi, str
+		mov		rax, 32
+		push	rax
+		mov		rdx, 1
+		mov		rdi, 1
+		mov		rax, 1
+		mov		rsi, rsp
 		syscall
-		mov		rdi, str
-		call	atod
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 16], xmm0
-		mov		rdx, 31
-		xor		rax, rax
-		xor		rdi, rdi
-		mov		rdi, str
+		pop		rax
+		mov		rax, 10
+		push	rax
+		mov		rdx, 1
+		mov		rdi, 1
+		mov		rax, 1
+		mov		rsi, rsp
 		syscall
-		mov		rdi, str
-		call	atod
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 24], xmm0
-		push	qword [rbp - 24]
-		push	qword [rbp - 16]
-		push	qword [rbp - 8]
-		call	NumSol
-		add		rsp, 24
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 32], xmm0
-		push	qword [rbp - 32]
-		push	qword [rbp - 24]
-		push	qword [rbp - 16]
-		push	qword [rbp - 8]
-		call	Solve
-		add		rsp, 32
+		pop		rax
 .ret_func:
 		leave
 		ret
@@ -127,8 +101,10 @@ func1:
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		movsd	qword [rbp - 24], xmm0
+		push	qword [rbp - 24]
 		mov		rdi, str
-		movsd	xmm0, qword [rbp - 24]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
 		call	dtoa
 		mov		rdx, rax
 		mov		rdi, 1
@@ -350,8 +326,10 @@ Solve:
 		push	qword [rbp - 8]
 		call	SolveSquare
 		add		rsp, 40
+		push	qword [rbp - 40]
 		mov		rdi, str
-		movsd	xmm0, qword [rbp - 40]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
 		call	dtoa
 		mov		rdx, rax
 		mov		rdi, 1
@@ -374,8 +352,10 @@ Solve:
 		mov		rsi, rsp
 		syscall
 		pop		rax
+		push	qword [rbp - 48]
 		mov		rdi, str
-		movsd	xmm0, qword [rbp - 48]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
 		call	dtoa
 		mov		rdx, rax
 		mov		rdi, 1
@@ -438,8 +418,10 @@ Solve:
 		call	SolveLinear
 		add		rsp, 24
 .if5end:
+		push	qword [rbp - 56]
 		mov		rdi, str
-		movsd	xmm0, qword [rbp - 56]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
 		call	dtoa
 		mov		rdx, rax
 		mov		rdi, 1

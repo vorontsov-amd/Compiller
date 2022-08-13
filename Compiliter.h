@@ -44,8 +44,8 @@ void TranslateIf(FILE* fasm, List<node_t>* functions, List<variable>* param, nod
 const char* Jnx(node_t* node);
 const char* Jxx(node_t* node);
 void TranslateWhile(FILE* fasm, List<node_t>* functions, List<variable>* param,  node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code);
-void TranslateCallPrintf(FILE* fasm, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
-void PrintOne(FILE* fasm, uint64_t offset, Stubs& stubs, ByteArray& machine_code);
+void TranslateCallPrintf(FILE* fasm, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
+void PrintOne(FILE* fasm, Stubs& stubs, ByteArray& machine_code);
 void PrintCharacter(FILE* fasm, uint32_t character, ByteArray& machine_code);
 void TranslateCallScanf(FILE* fasm, List<variable>* lst, node_t* node, Stubs& stubs, ByteArray& machine_code);
 void TranslateScanfReturn(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code);
