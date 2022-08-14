@@ -74,7 +74,9 @@ namespace CMD
     cmd_t MOV_RDX_1 = 0x48c7c201000000;
     cmd_t MOV_RSI_RSP = 0x4889e6;
     cmd_t POP_RAX = 0x58;
-    
+    cmd_t MOV_RDX_NUM = 0x48c7c2;
+    cmd_t MOVQ_RAX_XMM0 = 0x66480f7ec0;
+
     correct_t CALL_CORRECT = -0x5;
 };
 
@@ -107,6 +109,15 @@ public:
     template <typename T> index_t Append(const T cmd, size_t size_cmd);
     index_t AppendBin(const uint8_t* cmd, size_t size);
 
+     uint8_t* ShowMemory(size_t offset, size_t length)
+    {
+        uint8_t* memory = new uint8_t[length] {0};
+        for (int i = 0; i < length; i++)
+        {
+            memory[i] = array[offset + i];
+        }
+        return memory;
+    }
 
     const char* ByteCode() const;
     size_t Size() const;
@@ -190,6 +201,8 @@ struct Stubs
     bool rewind_if = false;
     bool rewind_const = false;
     bool rewind_const_expr = false;
+    bool rewind_const_str = false;
+    bool rewind_const_str_printf = false;
     bool rewind_while = false;
     bool rewind_init = false;
 };

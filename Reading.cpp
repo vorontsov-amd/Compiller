@@ -184,6 +184,15 @@ node_t* GetArgumentSequence(List<node_t>& programm, bool& no_string)
 	while (programm.ShowFront().dType() == DataType::COMMA)
 	{
 		programm.PopFront();
+		if (programm.ShowFront().dType() == DataType::QUOTE)
+		{
+			programm.PopFront();
+			GetArgument = GetStr;
+		}
+		else
+		{
+			GetArgument = GetExpression;
+		}
 		node_t* second_parametr = GetArgument(programm);
 		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
 	}
@@ -196,7 +205,9 @@ node_t* GetStr(List<node_t>& programm)
 	node_t* str = new node_t(programm.ShowFront());
 	str->SetDtype(DataType::CONST_STR);
 	programm.PopFront();
+	std::cout << programm.ShowFront() << "\n";
 	programm.PopFront();
+	std::cout << programm.ShowFront() << "\n";
 	return str;
 }
 
