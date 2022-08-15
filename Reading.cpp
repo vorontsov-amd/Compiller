@@ -142,6 +142,18 @@ node_t* GetFunc(List<node_t>& programm, node_t& func)
 	{
 		return new node_t(NodeType::WORD, DataType::PRINTF, funcname, nullptr, first_parametr);
 	}
+	else if (strcmp(funcname, "log") == 0 && no_string)
+	{
+		return new node_t(NodeType::WORD, DataType::LOG, funcname, nullptr, first_parametr);
+	}
+	else if (strcmp(funcname, "sin") == 0 && no_string)
+	{
+		return new node_t(NodeType::WORD, DataType::SIN, funcname, nullptr, first_parametr);
+	}
+	else if (strcmp(funcname, "cos") == 0 && no_string)
+	{
+		return new node_t(NodeType::WORD, DataType::COS, funcname, nullptr, first_parametr);
+	}
 	else if (strcmp(funcname, "sqrt") == 0 && no_string)
 	{
 		return new node_t(NodeType::WORD, DataType::SQRT, funcname, nullptr, first_parametr);
@@ -205,9 +217,7 @@ node_t* GetStr(List<node_t>& programm)
 	node_t* str = new node_t(programm.ShowFront());
 	str->SetDtype(DataType::CONST_STR);
 	programm.PopFront();
-	std::cout << programm.ShowFront() << "\n";
 	programm.PopFront();
-	std::cout << programm.ShowFront() << "\n";
 	return str;
 }
 
@@ -327,7 +337,7 @@ node_t* GetIf(List<node_t>& programm)
 	programm.PopFront();
 
 	CheckOpRoundBr(programm);
-	node_t* conditions = GetConditions(programm);
+	node_t* conditions = GetCondExpression(programm);
 	CheckClsRoundBr(programm);
 
 	node_t* op_else = GetElse(programm);
@@ -370,7 +380,7 @@ node_t* GetWhile(List<node_t>& programm)
 	programm.PopFront();
 
 	CheckOpRoundBr(programm);
-	node_t* conditions = GetConditions(programm);
+	node_t* conditions = GetCondExpression(programm);
 	CheckClsRoundBr(programm);
 
 	CheckOpShapeBr(programm);
@@ -380,10 +390,51 @@ node_t* GetWhile(List<node_t>& programm)
 }
 
 
+node_t* GetCondExpression(List<node_t>& programm)
+{
+	node_t* cond = GetCondTerm(programm);
+	while (programm.ShowFront().dType() == DataType::OR)
+	{
+		programm.PopFront();
+		node_t* cond2 = GetCondTerm(programm);
+		cond = new node_t(NodeType::OPERATOR, DataType::OR, "||", cond, cond2);
+	}
+	return cond;
+}
+
+
+node_t* GetCondTerm(List<node_t>& programm)
+{
+	node_t* cond = GetPrimaryCondExpression(programm);
+	while (programm.ShowFront().dType() == DataType::AND)
+	{
+		programm.PopFront();
+		node_t* cond2 = GetPrimaryCondExpression(programm);
+		std::cout << *cond2 << "\n";
+		cond = new node_t(NodeType::OPERATOR, DataType::AND, "&&", cond, cond2);
+	}
+	LOX
+	return cond;	
+}
+
+
+node_t* GetPrimaryCondExpression(List<node_t>& programm)
+{
+	if (programm.ShowFront().dType() == DataType::OP_ROUND_BR)
+	{
+		programm.PopFront();
+		node_t* val = GetCondExpression(programm);
+		CheckClsRoundBr(programm);
+		return val;
+	}
+	else return GetConditions(programm);	
+}
+
+
 node_t* GetConditions(List<node_t>& programm)
 {
 	node_t* left_op = GetExpression(programm);
-
+	
 	node_t op = programm.ShowFront();
 	programm.PopFront();
 

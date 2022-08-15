@@ -8,6 +8,19 @@
 
 
 
+struct ThreeIfStr
+{
+    const char* if_start;
+    const char* if_else;
+    const char* if_end;
+};
+
+struct TwoWhileStr
+{
+    const char* while_loop;
+    const char* while_end;
+};
+
 
 
 void TranslateToAsm(List<DifferTree>& proga);
@@ -42,16 +55,18 @@ void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, Stubs& stubs
 void AppendConst(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code);
 void AppendStr(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code);
 void TranslateIf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code);
+node_t* TranslateIfCondSeq(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, node_t* parrent, const ThreeIfStr& strings, bool have_else, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 const char* Jnx(node_t* node);
 const char* Jxx(node_t* node);
 void TranslateWhile(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param,  node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code);
+node_t* TranslateWhileCondSeq(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, node_t* parrent, const TwoWhileStr& strings, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void TranslateCallPrintf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void PrintOne(FILE* fasm, Stubs& stubs, ByteArray& machine_code);
 void PrintCharacter(FILE* fasm, uint32_t character, ByteArray& machine_code);
 void PrintString(FILE* fasm, int num_const_str, Stubs& stubs, ByteArray& machine_code);
 bool NoStringArgument(node_t* node);
-void TranslateCallScanf(FILE* fasm, int& num_const_str, List<variable>* lst, node_t* node, Stubs& stubs, ByteArray& machine_code);
-void TranslateScanfReturn(FILE* fasm, int& num_const_str, node_t* node, Stubs& stubs, ByteArray& machine_code);
+void TranslateCallScanf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
+void TranslateScanfReturn(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void TranslateScanfMoreParametrs(FILE* fasm, List<variable>* lst, node_t* node, Stubs& stubs, ByteArray& machine_code);
 void TranslateBaseScanf(FILE* fasm, Stubs& stubs, ByteArray& machine_code);
 void ScanOne(FILE* fasm, uint64_t offset, Stubs& stubs, ByteArray& machine_code);
@@ -62,14 +77,7 @@ void WriteELFHeader(Stubs& stubs, ByteArray& machine_code);
 void Test(ByteArray& machine_code);
 void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteArray& machine_code);
 void WriteStdFunctions(Stubs& stubs, ByteArray& machine_code);
-void WritePow(Stubs& stubs, ByteArray& machine_code);
-void WriteLog10(Stubs& stubs, ByteArray& machine_code);
-void WriteIsNan(Stubs& stubs, ByteArray& machine_code);
-void WriteIsInf(Stubs& stubs, ByteArray& machine_code);
-void WriteStrlen(Stubs& stubs, ByteArray& machine_code);
-void WriteFloor(Stubs& stubs, ByteArray& machine_code);
-void WriteDtoa(Stubs& stubs, ByteArray& machine_code);
-
-
-
+void TranslateCallLog(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
+void TransateCallCos(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
+void TransateCallSin(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 

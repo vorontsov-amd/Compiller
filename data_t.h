@@ -55,6 +55,11 @@ namespace DataType
 		RET,
 		QUOTE,
 		CONST_STR,
+		AND,
+		OR,
+		SIN,
+		COS,
+		LOG,
 	};
 }
 
@@ -136,6 +141,8 @@ class node_t
 			break;
 		case NodeType::END_OP:
 			stream << "END_OP. ";
+			break;
+		default:
 			break;
 		}
 		return stream << node.data;

@@ -76,6 +76,9 @@ namespace CMD
     cmd_t POP_RAX = 0x58;
     cmd_t MOV_RDX_NUM = 0x48c7c2;
     cmd_t MOVQ_RAX_XMM0 = 0x66480f7ec0;
+    cmd_t FLD_M64 = 0xdd0425;
+    cmd_t FSIN = 0xd9fe;
+    cmd_t FCOS = 0xd9ff;
 
     correct_t CALL_CORRECT = -0x5;
 };
@@ -191,10 +194,6 @@ struct Stubs
     EhdrStubs ElfStubs;
     addr_t pow_addres;
     addr_t log10_adderes;
-    addr_t isnan_addres;
-    addr_t isinf_addres;
-    addr_t strlen_addres;
-    addr_t floor_addres;
     addr_t dtoa_addres;
     addr_t atod_addres;
     bool is_loading = true;

@@ -9,7 +9,6 @@ List<node_t> AnalysProcessing (char* programm, long long length)
     char* word_ptr = new char[length];
     for (int str_len = 0; (str_len = sscanf(programm, "%s",word_ptr)) != -1; programm += (strlen(word_ptr) + 1))
     {
-        puts(word_ptr);
         WordAnalysis(word_ptr, lexems);
     }
     node_t term(NodeType::TERMINATED);
@@ -47,7 +46,6 @@ void WordAnalysis(char* word_ptr, List<node_t>& lexems)
     {        
         if (char* ch = isSubstring(word_ptr))
         {  
-            printf("substr %c\n",*ch);
             SubstringAnalysis(word_ptr, ch, lexems);
         }
         else
@@ -87,6 +85,8 @@ char* isSubstring(char* str)
     else STRSTR("]")
     else STRSTR(",")
     else STRSTR("'")
+    else STRSTR("&&")
+    else STRSTR("||")
     return nullptr;
 }
 
@@ -103,10 +103,7 @@ void SubstringAnalysis(char* word_ptr, char* ch, List<node_t>& lexems)
     {
         WordAnalysis(word_ptr, lexems);
     } 
-    else
-    {
-        puts("lox");
-    }
+
     *ch = smb;
     if (ch[1] == '=')
     {
@@ -130,14 +127,9 @@ void SubstringAnalysis(char* word_ptr, char* ch, List<node_t>& lexems)
 bool isNumber(char* str)
 {
     CHECK_STR_PTR(str);
-    
-    int status = 0, i = 0;
-    for (i; *str != '\0'; i++, str++)
-    {
-        status += std::isdigit(*str);
-    }
-    
-    return status == i;
+    double test = 0;
+    char ch = 0;
+    return sscanf(str, "%lf %c", &test, &ch) == 1;
 }
 
 
@@ -158,8 +150,8 @@ symbol* isOperator(char* str)
 {
     CHECK_STR_PTR(str);
 
-    char operators[15][3] = {"+", "-", "=", "*", "<", ">", "/", "^", ">=", "<=", "!=", "==", ";", ",", "'"};
-    int result =  SearchOperator(operators, 15, str);
+    char operators[17][3] = {"+", "-", "=", "*", "<", ">", "/", "^", ">=", "<=", "!=", "==", ";", ",", "'", "&&", "||"};
+    int result =  SearchOperator(operators, 17, str);
     if (result != -1)
     {
         symbol* op = new symbol;
@@ -209,6 +201,12 @@ symbol* isOperator(char* str)
             break;
         case 14:
             op->type = DataType::QUOTE;
+            break;
+        case 15:
+            op->type = DataType::AND;
+            break;
+        case 16:
+            op->type = DataType::OR;
             break;
         }
         op->ch = new char[3];

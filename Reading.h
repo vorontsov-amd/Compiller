@@ -41,4 +41,7 @@ void CheckOpShapeBr(List<node_t>& programm);
 node_t* GetNewVar(List<node_t>& programm);
 node_t* GetReturn(List<node_t>& programm);
 node_t* GetStr(List<node_t>& programm);
+node_t* GetPrimaryCondExpression(List<node_t>& programm);
+node_t* GetCondTerm(List<node_t>& programm);
+node_t* GetCondExpression(List<node_t>& programm);
 
