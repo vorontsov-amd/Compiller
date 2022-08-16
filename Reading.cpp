@@ -33,6 +33,7 @@ void CheckValidFunc(List<node_t>& programm)
 {
 	if (programm.ShowFront().Type() != NodeType::WORD || strcmp(programm.ShowFront().value().string_ptr, "define") != 0)
 	{
+		std::cout << programm.ShowFront() << "\n";
 		fprintf(stderr, "Functions not found\n");
 		exit(EXIT_FAILURE);
 	}

@@ -23,7 +23,7 @@ struct TwoWhileStr
 
 
 
-void TranslateToAsm(List<DifferTree>& proga);
+void TranslateToAsm(List<DifferTree>& proga, const char* out_name);
 const char* ProgrammName(List<DifferTree>& proga);
 void StrToHex(const char* str, ByteArray& machine_code);
 const char* MainFuncName(List<DifferTree>& proga);

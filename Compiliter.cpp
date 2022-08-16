@@ -1,7 +1,7 @@
 #include "Compiliter.h"
 
 
-void TranslateToAsm(List<DifferTree>& proga)
+void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
 {
     const char* programm_name = ProgrammName(proga);
 
@@ -44,7 +44,7 @@ void TranslateToAsm(List<DifferTree>& proga)
 
     LOX
 
-    FILE* out = fopen("out", "wb");    
+    FILE* out = fopen(out_name, "wb");    
     assert(out);
     LOX
     fwrite(machine_code.ByteCode(), 1, machine_code.Size(), out);

@@ -129,7 +129,7 @@ bool isNumber(char* str)
     CHECK_STR_PTR(str);
     double test = 0;
     char ch = 0;
-    return sscanf(str, "%lf %c", &test, &ch) == 1;
+    return (sscanf(str, "%lg %c", &test, &ch) == 1 && !std::isinf(test) && !std::isnan(test));
 }
 
 

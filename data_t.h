@@ -115,6 +115,7 @@ class node_t
 	friend DifferTree;
 	friend std::ostream& operator<<(std::ostream& stream, node_t const& node)
 	{
+		LOX
 		stream << "Node type is ";
 		switch (node.type)
 		{
@@ -145,6 +146,7 @@ class node_t
 		default:
 			break;
 		}
+		LOX
 		return stream << node.data;
 	}
 	friend node_t& operator+(node_t& node_left, node_t& node_right);

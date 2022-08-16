@@ -10,15 +10,44 @@ size_t Filesize  (FILE *stream);
 void ClearBuf(char* buffer, size_t filesize, bool* flag);
 void ProgrammDump(List<DifferTree> tree);
 char* NameFunc(DifferTree tree);
+void VerifyMainArgument(int argc, const char* argv[]);
 
-int main()
-{
-	List<node_t> lst = ListScan("main.amd");
+int main(int argc, char const *argv[])
+{    
+    VerifyMainArgument(argc, argv);
+    
+    const char* filename_code = argv[1];
+    const char* filename_text = argv[2];
+
+    List<node_t> lst = ListScan(filename_text);
 	lst.GraphDump();
 	List<DifferTree> tree = GetGrammar(lst);
     //ProgrammDump(tree);
     LOX  
-    TranslateToAsm(tree);
+    TranslateToAsm(tree, filename_code);
+}
+
+void VerifyMainArgument(int argc, const char* argv[])
+{
+	switch (argc)
+    {
+    case 1:
+        puts("file for compillig not detected");
+        exit(EXIT_SUCCESS);
+    case 2:
+        puts("you have to enter 2 arguments");
+        exit(EXIT_SUCCESS);
+    case 3: 
+        return;
+    default:
+        puts("compiliter can compillite only one file");
+        exit(EXIT_SUCCESS);
+    }
+    if (strcmp(argv[0], argv[1]) == 0)
+    {
+        puts("you can't name a out file with a compiler name");
+        exit(EXIT_SUCCESS);
+    }
 }
 
 void ProgrammDump(List<DifferTree> tree)
