@@ -21,8 +21,9 @@ int main(int argc, char const *argv[])
 
     List<node_t> lst = ListScan(filename_text);
 	lst.GraphDump();
+
 	List<DifferTree> tree = GetGrammar(lst);
-    //ProgrammDump(tree);
+    ProgrammDump(tree);
     LOX  
     TranslateToAsm(tree, filename_code);
 }
@@ -71,7 +72,7 @@ char* NameFunc(DifferTree tree)
 }
 
 
-size_t Filesize  (FILE *stream)  
+size_t Filesize(FILE *stream)  
 {
     struct stat buff = {};
 
@@ -82,20 +83,24 @@ size_t Filesize  (FILE *stream)
 
 List<node_t> ListScan(const char* filename)
 {
-    FILE* stream = fopen("main.amd", "r");
+    FILE* stream = fopen(filename, "r");
 	
 	size_t filesize = Filesize(stream);
 
-    char* buffer = (char*) calloc(filesize + 1, sizeof(char));
+    char* buffer = new (std::nothrow) char[filesize + 1];
     if (buffer == nullptr)
     {
+        fprintf(stderr, "buffer pointer nullptr. Line: %d\n", __LINE__);
         fclose(stream);
+        exit(EXIT_FAILURE);
     }
 
     size_t count = fread(buffer, sizeof(char), filesize, stream);
     if (count != filesize)
     {
+        fprintf(stderr, "count fread() return != filesize. Line: %d", __LINE__);
         fclose(stream);
+        exit(EXIT_FAILURE);
     }
 
     buffer[filesize] = '\0';

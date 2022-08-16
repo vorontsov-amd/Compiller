@@ -13,6 +13,16 @@ struct symbol
 {
     DataType::dataType type;
     char* ch;
+    symbol()
+    {
+        type = DataType::UNKNOWN;
+        ch = nullptr;
+    }
+    ~symbol()
+    {
+        delete[] ch;
+        ch = nullptr;
+    }
 };
 
 

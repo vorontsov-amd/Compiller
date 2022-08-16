@@ -3,6 +3,7 @@
 List<node_t> AnalysProcessing (char* programm, long long length)
 {
     CHECK_STR_PTR(programm);
+    char * save_programm = programm;
 
     List<node_t> lexems;
 
@@ -13,7 +14,9 @@ List<node_t> AnalysProcessing (char* programm, long long length)
     }
     node_t term(NodeType::TERMINATED);
     lexems.PushBack(term);
+
     delete[] word_ptr;
+    delete[] save_programm;
     return lexems;
 }
 
@@ -36,11 +39,13 @@ void WordAnalysis(char* word_ptr, List<node_t>& lexems)
     {
         node_t oper(NodeType::OPERATOR, op->type, op->ch);
         lexems.PushBack(oper);
+        delete op;
     }
     else if (symbol* br = isBracket(word_ptr))
     {
         node_t bracket(NodeType::BRACKET, br->type, br->ch);
         lexems.PushBack(bracket);
+        delete br;
     }
     else 
     {        
