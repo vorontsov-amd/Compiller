@@ -1,37 +1,9 @@
-define func()
+
+
+define fibonacci()
 {
-    print('Enter', 'number', 'test', 'programm');
-    print(1, 'SolveSquareEquation');
-    print(2, 'fubonacci');
-    print(3, 'factorial');
-    input(x);
-
-    while (x < 1 || x > 3)
-    {
-        x = input('try', 'again');
-    };
-    if (x == 1) { SolveSquareEquation(); }
-    else if (x == 2) { fubonacci(); }
-    else { factorial(); };
-
-    print('Done');
-}
-
-
-define SolveSquareEquation()
-{
-    var a = input('enter', 'a');
-    var b = input('enter', 'b');
-    var c = input('enter', 'c');
-    var num_sol = NumSol(a, b, c);
-    print(num_sol);
-    Solve(a, b, c, num_sol);
-}
-
-
-define fubonacci()
-{
-    var x = input('enter', 'fubonacci', 'number');
+    print('test 1');
+    var x = input('enter fibonacci number');
     var i = 1;
     while (i <= x)
     {
@@ -43,7 +15,7 @@ define fubonacci()
 
 define factorial()
 {
-    var x = input('enter', 'factorial', 'number');
+    var x = input('enter factorial number');
     var i = 1;
     while (i <= x)
     {
@@ -91,7 +63,7 @@ define Solve(new a, new b, new c, new num_sol)
         var x1 = 0;
         var x2 = 0;
         SolveSquare(a, b, c, x1, x2);
-        print(x1, x2);
+        print('x1 =', x1, 'x2 =', x2);
     }
     else if (num_sol == 1)
     {
@@ -104,15 +76,15 @@ define Solve(new a, new b, new c, new num_sol)
         {
             SolveLinear(b, c, x);
         };
-        print('x', x);
+        print('x =', x);
     }
     else if (num_sol == 0)
     {
-        print('no', 'solutions');
+        print('no solutions');
     }
     else if (num_sol == -1)
     {
-        print('infity', 'root');
+        print('infity root');
     };
 }
 

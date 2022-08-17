@@ -73,7 +73,7 @@ void ScanOne(FILE* fasm, uint64_t offset, Stubs& stubs, ByteArray& machine_code)
 void TransateCallSqtr(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void TranslateRet(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_codee);
 uint64_t OffsetVariable(List<variable>* lst, node_t* var_ptr);
-void WriteELFHeader(Stubs& stubs, ByteArray& machine_code);
+//void WriteELFHeader(Stubs& stubs, ByteArray& machine_code);
 void Test(ByteArray& machine_code);
 void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteArray& machine_code);
 void WriteStdFunctions(Stubs& stubs, ByteArray& machine_code);

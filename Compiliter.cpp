@@ -8,11 +8,9 @@ void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
     FILE* fasm = fopen(programm_name, "w");
 
     ByteArray machine_code;
-    Stubs stubs;
-    List<Label>* lbl = new List<Label>;
-    stubs.labels = *lbl;
+    Stubs& stubs = machine_code.stubs;
 
-    WriteELFHeader(stubs, machine_code);
+    machine_code.AppendElfHeader();
     WritePreamble(fasm, proga, stubs, machine_code);
     LOX
     TranslateProcessing(fasm, proga, stubs, machine_code);
@@ -32,7 +30,7 @@ void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
 
     LOX
 
-    WriteELFHeader(stubs, machine_code);
+    machine_code.AppendElfHeader();
 
     LOX
 
@@ -54,68 +52,6 @@ void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
     LOX
 }
 
-void WriteELFHeader(Stubs& stubs, ByteArray& machine_code)
-{
-    const int NO_USE = 0;
-    stubs.ElfStubs.e_entry = 0x30200000;
-
-    Elf64_Ehdr elf_header = {
-        .e_ident = {ELFMAG0,       ELFMAG1,     ELFMAG2,       ELFMAG3,
-                    ELFCLASS64,    ELFDATA2LSB, EV_CURRENT,    ELFOSABI_NONE,
-                    ELFOSABI_NONE, NO_USE,      NO_USE,        NO_USE,
-                    NO_USE,        NO_USE,      NO_USE,        sizeof(elf_header.e_ident)},
-        .e_type      = ET_EXEC,
-        .e_machine   = EM_X86_64,
-        .e_version   = EV_CURRENT,
-        .e_entry     = stubs.ElfStubs.text_stubs.p_vaddp,
-        .e_phoff     = sizeof(Elf64_Ehdr),
-        .e_shoff     = NO_USE,
-        .e_flags     = NO_USE,
-        .e_ehsize    = sizeof(Elf64_Ehdr),
-        .e_phentsize = sizeof(Elf64_Phdr),
-        .e_phnum     = 3,
-        .e_shentsize = NO_USE,
-        .e_shnum     = NO_USE,
-        .e_shstrndx  = NO_USE,
-    };
-    machine_code.Append(elf_header);
-
-    Elf64_Phdr data_header = {
-        .p_type    = PT_LOAD,
-        .p_flags   = PF_R | PF_W,
-        .p_offset  = stubs.ElfStubs.data_stubs.p_offset,
-        .p_vaddr   = stubs.ElfStubs.data_stubs.p_vaddp,
-        .p_paddr   = NO_USE,
-        .p_filesz  = stubs.ElfStubs.data_stubs.p_size,
-        .p_memsz   = stubs.ElfStubs.data_stubs.p_size,
-        .p_align   = 0x1000,
-    };
-    machine_code.Append(data_header);
-
-    Elf64_Phdr rodata_header = {
-        .p_type    = PT_LOAD,
-        .p_flags   = PF_R,
-        .p_offset  = stubs.ElfStubs.rodata_stubs.p_offset,
-        .p_vaddr   = stubs.ElfStubs.rodata_stubs.p_vaddp,
-        .p_paddr   = NO_USE,
-        .p_filesz  = stubs.ElfStubs.rodata_stubs.p_size,
-        .p_memsz   = stubs.ElfStubs.rodata_stubs.p_size,
-        .p_align   = 0x1000,
-    };
-    machine_code.Append(rodata_header);
-        
-    Elf64_Phdr text_header = {
-        .p_type    = PT_LOAD,
-        .p_flags   = PF_X | PF_R | PF_W,
-        .p_offset  = stubs.ElfStubs.text_stubs.p_offset,
-        .p_vaddr   = stubs.ElfStubs.text_stubs.p_vaddp,
-        .p_paddr   = NO_USE,
-        .p_filesz  = stubs.ElfStubs.text_stubs.p_size,
-        .p_memsz   = stubs.ElfStubs.text_stubs.p_size,
-        .p_align   = 0x1000,
-    };
-    machine_code.Append(text_header);
-}
 
 
 const char* ProgrammName(List<DifferTree>& proga)
@@ -139,44 +75,46 @@ void WritePreamble(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray&
     fputs("global _start\n", fasm);
     fputs("extern dtoa, atod, pow\n\n", fasm);
     PreambleData(fasm, proga, stubs, machine_code);
-    LOX
     PreambleRodata(fasm, proga, stubs, machine_code);
-    LOX
     fputs("section .text\n", fasm);
 }
 
 void PreambleRodata(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& machine_code)
 {
     fputs("section .rodata\n", fasm);
+
     uint64_t rodata_begin = machine_code.Size();
-    if (stubs.is_loading)
+    if (machine_code.stubsNotLoaded())
     {
-        stubs.ElfStubs.rodata_stubs.p_offset = rodata_begin;
-        stubs.ElfStubs.rodata_stubs.p_vaddp = stubs.ElfStubs.e_entry + rodata_begin;
+        machine_code.rodataStubs().p_offset = rodata_begin;
+        machine_code.rodataStubs().p_vaddp  = stubs.ElfStubs.e_entry + rodata_begin;
     }
-    LOX
+
     WriteConstant(fasm, DataType::CONSTANT, proga, stubs, machine_code);
     WriteConstant(fasm, DataType::CONST_STR, proga, stubs, machine_code);
 
 
     uint16_t rodata_end = machine_code.Size();
-    if (stubs.is_loading)
+    if (machine_code.stubsNotLoaded())
     {
-        stubs.ElfStubs.rodata_stubs.p_size = rodata_end - rodata_begin;
+        machine_code.rodataStubs().p_size = rodata_end - rodata_begin;
     }
 }
 
 void PreambleData(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& machine_code)
 {
     fputs("section .data\n", fasm);
-    if (stubs.is_loading)
+
+    if (machine_code.stubsNotLoaded())
     {
-        stubs.ElfStubs.data_stubs.p_offset = machine_code.Size();
-        stubs.ElfStubs.data_stubs.p_vaddp = stubs.ElfStubs.e_entry + machine_code.Size();
-        stubs.ElfStubs.data_stubs.p_size = sizeof(double);
+        machine_code.dataStubs().p_offset = machine_code.Size();
+        machine_code.dataStubs().p_vaddp = stubs.ElfStubs.e_entry + machine_code.Size();
+        machine_code.dataStubs().p_size = sizeof(double);
     }
+
     fputs("buffer: dq 0.0\n", fasm);
     machine_code.Append(0.0);
+
     fputs("str: times 32 db 0\n", fasm);
     machine_code.Append(0U);
     machine_code.Append(0U);
@@ -204,20 +142,16 @@ void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, Stubs& stubs
         switch (mode)
         {
         case DataType::CONST_STR:
-            LOX
             AppendData = AppendStr;
-            LOX
             break;
         case DataType::CONSTANT:
             AppendData = AppendConst;
             break;
         default:
-            fprintf(stderr, "daun? Got a segfault");
-            fprintf(stderr, "Segmentation fault");
+            fprintf(stderr, "Incorrect Searching mode");
             exit(EXIT_FAILURE);
             break;
         }
-        LOX
         AppendData(fasm, node, stubs, machine_code);
     }
     if (node->GetRight()) SearchConst(fasm, mode, node->GetRight(), stubs, machine_code);
@@ -226,20 +160,18 @@ void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, Stubs& stubs
 void AppendConst(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code)
 {    
     static int num_const = 0;
-    if (stubs.rewind_const)
+    if (machine_code.stubsLoaded())
     {
-        num_const = 0;
-        stubs.rewind_const = false;
+        num_const = 0;;
     }
     
-    double number = node->value().number;
-    char str[15] = "";
-    snprintf(str, 15, "const_%d", num_const);
+    double number = node->Num();
+    std::string lbl_number = "const_" + std::to_string(num_const);
 
-    fprintf(fasm, "%s: dq %lf\n", str, number);
+    fprintf(fasm, "%s: dq %lf\n", lbl_number.c_str(), number);
 
-    addr_t addres = stubs.ElfStubs.rodata_stubs.p_vaddp + num_const * sizeof(double);
-    Label new_label(str, addres);
+    addr_t addres = machine_code.rodataStubs().p_vaddp + num_const * sizeof(double);
+    Label new_label(lbl_number.c_str(), addres);
     stubs.labels.PushBack(new_label);
     machine_code.Append(number);
 

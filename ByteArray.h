@@ -89,74 +89,18 @@ namespace CMD
 void* memreverse(void* begin, size_t size);
 
 
-class ByteArray
-{
-private:
-    const addr_t e_point = 0x30200000;
-    char* array;
-    size_t size;
-    index_t cur_index;
-public:
-    ByteArray();
-    ByteArray(const char* _array, const size_t _size);
-    ~ByteArray();
-
-    //index_t Append(const char ch);
-    index_t Append(const Elf64_Ehdr ehdr);
-    index_t Append(const Elf64_Phdr phdr);
-    index_t Append(const uint32_t ch);
-    index_t Append(const uint8_t num);
-    index_t Append(const double num);
-    index_t Append(const char* func, size_t len);
-    //index_t Append(const uint64_t num);
-    template <typename T> index_t Append(const T cmd, size_t size_cmd);
-    index_t AppendBin(const uint8_t* cmd, size_t size);
-
-     uint8_t* ShowMemory(size_t offset, size_t length)
-    {
-        uint8_t* memory = new uint8_t[length] {0};
-        for (int i = 0; i < length; i++)
-        {
-            memory[i] = array[offset + i];
-        }
-        return memory;
-    }
-
-    const char* ByteCode() const;
-    size_t Size() const;
-    void Rewind();
-    addr_t Vaddr() const
-    {
-        return e_point + cur_index;
-    }
-};
-
-
-template <typename T> index_t ByteArray::Append(const T cmd, size_t size_cmd)
-{
-    if (cur_index + size_cmd >= size - 1)
-    {
-        array = (char*)realloc(array, 2 * size);
-        size = 2 * size;
-    }
-    memcpy(array + cur_index, &cmd, size_cmd);
-    memreverse(array + cur_index, size_cmd);
-    cur_index += size_cmd;
-    return cur_index;
-}
-
 
 
 class Label
 {
 private:
-    char* name;
+    std::string name;
     addr_t addr;
 public:
-    Label();
-    Label(const Label& lbl);
-    Label(const char* _name, const addr_t _addr);
-    ~Label();
+    Label() : addr(0) {}
+    Label(const Label& lbl) : name(lbl.name), addr(lbl.addr) {}
+    Label(std::string _name, const addr_t _addr) : name(_name), addr(_addr) {}
+    ~Label() {}
 
     friend std::ostream& operator<< (std::ostream& stream, Label const& lbl)
     {
@@ -164,10 +108,9 @@ public:
         return stream;
     }
 
-    Label& operator=(const Label& data);
 
-    bool Contain(const char* str) const;
-    addr_t Addres() const;
+    bool Contain(const std::string str) const { return name == str; };
+    addr_t Addres() const { return addr; };
 };
 
 
@@ -181,7 +124,7 @@ struct PhdrStubs
 
 struct EhdrStubs
 {
-    addr_t e_entry;
+    addr_t e_entry = 0x30200000;
     PhdrStubs rodata_stubs;
     PhdrStubs data_stubs;
     PhdrStubs text_stubs;
@@ -203,12 +146,76 @@ struct Stubs
     bool rewind_const_str = false;
     bool rewind_const_str_printf = false;
     bool rewind_while = false;
-    bool rewind_init = false;
+    bool rewind_init  = false;
 };
 
 
+class ByteArray
+{
+private:
+    char* array;
+    size_t size;
+    index_t cur_index;
+public:
+    Stubs stubs;
+    ByteArray();
+    ByteArray(const char* _array, const size_t _size);
+    ~ByteArray();
 
-addr_t LabelAddr(Stubs& st, ByteArray& code);
+    //index_t Append(const char ch);
+    index_t Append(const Elf64_Ehdr ehdr);
+    index_t Append(const Elf64_Phdr phdr);
+    index_t Append(const uint32_t ch);
+    index_t Append(const uint8_t num);
+    index_t Append(const double num);
+    index_t Append(const char* func, size_t len);
+    void AppendElfHeader();
+
+
+    //index_t Append(const uint64_t num);
+    template <typename T> index_t Append(const T cmd, size_t size_cmd);
+    index_t AppendBin(const uint8_t* cmd, size_t size);
+
+    uint8_t* ShowMemory(size_t offset, size_t length)
+    {
+        uint8_t* memory = new uint8_t[length] {0};
+        for (int i = 0; i < length; i++)
+        {
+            memory[i] = array[offset + i];
+        }
+        return memory;
+    }
+
+    const char* ByteCode() const;
+    size_t Size() const;
+    void Rewind();
+    addr_t Vaddr() const
+    {
+        return e_point() + cur_index;
+    }
+    
+    bool stubsNotLoaded() { return stubs.is_loading; }
+    bool stubsLoaded() { return !stubs.is_loading; }
+    addr_t e_point() const { return stubs.ElfStubs.e_entry; }
+    PhdrStubs& dataStubs() {return stubs.ElfStubs.data_stubs; }
+    PhdrStubs& rodataStubs() {return stubs.ElfStubs.rodata_stubs; }
+};
+
+
+template <typename T> index_t ByteArray::Append(const T cmd, size_t size_cmd)
+{
+    if (cur_index + size_cmd >= size - 1)
+    {
+        array = (char*)realloc(array, 2 * size);
+        size = 2 * size;
+    }
+    memcpy(array + cur_index, &cmd, size_cmd);
+    memreverse(array + cur_index, size_cmd);
+    cur_index += size_cmd;
+    return cur_index;
+}
+
+addr_t LabelAddr(Stubs& sturb, ByteArray& code);
 Label SearchLabel(const char* funcname, List<Label> lst);
 
 void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code);

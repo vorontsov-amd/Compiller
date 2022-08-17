@@ -78,26 +78,16 @@ std::ostream& operator<< (std::ostream& stream, const data_t& data)
 
 data_t::data_t(data_t& data)
 {
-	LOX
-
 	type = data.type;
 	if (type == DataType::CONSTANT)
 	{
-		LOX
 		value.number = data.value.number;
 	}
 	else 
 	{
-		LOX
 		const char* str = data.value.string_ptr;
-		assert(str);
-		LOX
-		std::cout << strlen(str) << " strlen " << str << "\n";
 		value.string_ptr = new char[strlen(str) + 1];
-		assert(value.string_ptr);
-		LOX
 		strcpy(value.string_ptr, str);
-		LOX
 	}
 }
 
@@ -134,7 +124,6 @@ data_t::~data_t()
 
 data_t& data_t::operator=(const data_t& data)
 {
-	LOX
 	if (type != DataType::CONSTANT)
 		delete value.string_ptr;
 
@@ -259,9 +248,6 @@ node_t::node_t(const NodeType::nodeType N_type, const DataType::dataType D_type,
 
 node_t::node_t(node_t& node) : data(node.data)
 {
-	LOX
-	//data = node.data;
-	LOX
 	type = node.type;
 	if (node.left != nullptr)
 	{

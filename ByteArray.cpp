@@ -160,70 +160,78 @@ void ByteArray::Rewind()
     cur_index = 0;
 }
 
+
+void  ByteArray::AppendElfHeader()
+{
+    const int NO_USE = 0;
+
+    Elf64_Ehdr elf_header = {
+        .e_ident = {ELFMAG0,       ELFMAG1,     ELFMAG2,       ELFMAG3,
+                    ELFCLASS64,    ELFDATA2LSB, EV_CURRENT,    ELFOSABI_NONE,
+                    ELFOSABI_NONE, NO_USE,      NO_USE,        NO_USE,
+                    NO_USE,        NO_USE,      NO_USE,        sizeof(elf_header.e_ident)},
+        .e_type      = ET_EXEC,
+        .e_machine   = EM_X86_64,
+        .e_version   = EV_CURRENT,
+        .e_entry     = stubs.ElfStubs.text_stubs.p_vaddp,
+        .e_phoff     = sizeof(Elf64_Ehdr),
+        .e_shoff     = NO_USE,
+        .e_flags     = NO_USE,
+        .e_ehsize    = sizeof(Elf64_Ehdr),
+        .e_phentsize = sizeof(Elf64_Phdr),
+        .e_phnum     = 3,
+        .e_shentsize = NO_USE,
+        .e_shnum     = NO_USE,
+        .e_shstrndx  = NO_USE,
+    };
+    Append(elf_header);
+
+    Elf64_Phdr data_header = {
+        .p_type    = PT_LOAD,
+        .p_flags   = PF_R | PF_W,
+        .p_offset  = stubs.ElfStubs.data_stubs.p_offset,
+        .p_vaddr   = stubs.ElfStubs.data_stubs.p_vaddp,
+        .p_paddr   = NO_USE,
+        .p_filesz  = stubs.ElfStubs.data_stubs.p_size,
+        .p_memsz   = stubs.ElfStubs.data_stubs.p_size,
+        .p_align   = 0x1000,
+    };
+    Append(data_header);
+
+    Elf64_Phdr rodata_header = {
+        .p_type    = PT_LOAD,
+        .p_flags   = PF_R,
+        .p_offset  = stubs.ElfStubs.rodata_stubs.p_offset,
+        .p_vaddr   = stubs.ElfStubs.rodata_stubs.p_vaddp,
+        .p_paddr   = NO_USE,
+        .p_filesz  = stubs.ElfStubs.rodata_stubs.p_size,
+        .p_memsz   = stubs.ElfStubs.rodata_stubs.p_size,
+        .p_align   = 0x1000,
+    };
+    Append(rodata_header);
+        
+    Elf64_Phdr text_header = {
+        .p_type    = PT_LOAD,
+        .p_flags   = PF_X | PF_R | PF_W,
+        .p_offset  = stubs.ElfStubs.text_stubs.p_offset,
+        .p_vaddr   = stubs.ElfStubs.text_stubs.p_vaddp,
+        .p_paddr   = NO_USE,
+        .p_filesz  = stubs.ElfStubs.text_stubs.p_size,
+        .p_memsz   = stubs.ElfStubs.text_stubs.p_size,
+        .p_align   = 0x1000,
+    };
+    Append(text_header);
+}
+
+
+
 //--------------------------- End class ByteArray --------------------------
 
 //---------------------------- Begin class Label ----------------------------
 
-Label::Label()
-{
-    name = nullptr;
-    addr = 0;
-}
-
-Label::Label(const Label& lbl)
-{
-    name = new char[strlen(lbl.name) + 1] {0};
-    strcpy(name, lbl.name);
-    addr = lbl.addr;
-}
-
-Label::Label(const char* _name, const addr_t _addr)
-{
-    name = new char[strlen(_name) + 1] {0};
-    strcpy(name, _name);
-    addr = _addr;
-}
-
-Label::~Label()
-{
-
-}
-
-bool Label::Contain(const char* str) const
-{
-    return strcmp(str, name) == 0;
-}
-
-addr_t Label::Addres() const
-{
-    return addr;
-}
-
-
-Label& Label::operator=(const Label& lbl)
-{
-    if (lbl.name)
-    {
-        name = new char[strlen(lbl.name) + 1];
-        strcpy(name, lbl.name);
-    }
-    else
-    {
-        name = new char[1];
-        name[0] = '\0';
-    }
-
-    addr = lbl.addr;
-    return *this;
-}
-
-
-//----------------------------- End class Label -----------------------------
-
-
 addr_t LabelAddr(Stubs& st, ByteArray& code)
 {
-    addr_t addr = st.ElfStubs.e_entry + code.Size();
+    addr_t addr = code.e_point() + code.Size();
     return addr;
 }
 

@@ -223,7 +223,18 @@ node_t* GetStr(List<node_t>& programm)
 	while (programm.ShowFront().dType() != DataType::QUOTE)
 	{
 		str += " ";
-		str += programm.ShowFront().Name();
+		
+		node_t next = programm.ShowFront();
+		if (next.Type() == NodeType::NUMBER)
+		{
+			std::string num = std::to_string(next.value().number);
+			str += num;
+		}
+		else
+		{
+			str += next.Name();
+		}
+
 		programm.PopFront();
 	}
 	programm.PopFront();
@@ -312,7 +323,6 @@ void CheckClsRoundBr(List<node_t>& programm)
 {
 	if (programm.ShowFront().dType() != DataType::CLS_ROUND_BR)
 	{
-		std::cout << programm.ShowFront();
 		fprintf(stderr, "Missing closing bracket ')'\n");
 		exit(EXIT_FAILURE);
 	}
@@ -419,10 +429,8 @@ node_t* GetCondTerm(List<node_t>& programm)
 	{
 		programm.PopFront();
 		node_t* cond2 = GetPrimaryCondExpression(programm);
-		std::cout << *cond2 << "\n";
 		cond = new node_t(NodeType::OPERATOR, DataType::AND, "&&", cond, cond2);
 	}
-	LOX
 	return cond;	
 }
 
