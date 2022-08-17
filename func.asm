@@ -5,14 +5,14 @@ section .data
 buffer: dq 0.0
 str: times 32 db 0
 section .rodata
-const_0: dq 0.000000
-const_1: dq 1.000000
-const_2: dq 2.000000
-const_3: dq 3.000000
-const_4: dq 1.000000
-const_5: dq 3.000000
-const_6: dq 1.000000
-const_7: dq 2.000000
+const_0: dq 1.000000
+const_1: dq 2.000000
+const_2: dq 3.000000
+const_3: dq 1.000000
+const_4: dq 3.000000
+const_5: dq 1.000000
+const_6: dq 2.000000
+const_7: dq 1.000000
 const_8: dq 1.000000
 const_9: dq 1.000000
 const_10: dq 1.000000
@@ -20,36 +20,33 @@ const_11: dq 1.000000
 const_12: dq 1.000000
 const_13: dq 1.000000
 const_14: dq 1.000000
-const_15: dq 1.000000
-const_16: dq 2.000000
-const_17: dq 1.000000
-const_18: dq 2.000000
-const_19: dq 1.000000
-const_20: dq 2.000000
+const_15: dq 2.000000
+const_16: dq 1.000000
+const_17: dq 2.000000
+const_18: dq 1.000000
+const_19: dq 2.000000
+const_20: dq 0.000000
 const_21: dq 0.000000
-const_22: dq 0.000000
-const_23: dq 1.000000
+const_22: dq 1.000000
+const_23: dq 0.000000
 const_24: dq 0.000000
 const_25: dq 0.000000
-const_26: dq 0.000000
-const_27: dq 1.000000
+const_26: dq 1.000000
+const_27: dq 0.000000
 const_28: dq 0.000000
 const_29: dq 0.000000
-const_30: dq 0.000000
-const_31: dq -1.000000
-const_32: dq 0.000000
-const_33: dq 1.000000
+const_30: dq -1.000000
+const_31: dq 0.000000
+const_32: dq 1.000000
+const_33: dq 0.000000
 const_34: dq 0.000000
 const_35: dq 0.000000
-const_36: dq 0.000000
-const_37: dq 1.000000
+const_36: dq 1.000000
+const_37: dq 2.000000
 const_38: dq 2.000000
 const_39: dq 2.000000
 const_40: dq 2.000000
-const_41: dq 2.000000
-const_42: dq 4.000000
-const_43: dq 2.000000
-const_44: dq 4.000000
+const_41: dq 4.000000
 str_0: db 'Enter'
 str_0_len: equ $-str_0
 str_1: db 'number'
@@ -118,7 +115,15 @@ func:
 		push	rbp
 		mov		rbp, rsp
 		sub		rsp, 16
-		push	qword [const_0]
+		mov		rdx, 31
+		xor		rax, rax
+		xor		rdi, rdi
+		mov		rsi, str
+		syscall
+		mov		rdi, str
+		call	atod
+		movsd	qword [buffer], xmm0
+		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		movsd	qword [rbp - 8], xmm0
@@ -182,7 +187,7 @@ func:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [const_1]
+		push	qword [const_0]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -221,7 +226,7 @@ func:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [const_2]
+		push	qword [const_1]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -260,7 +265,7 @@ func:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [const_3]
+		push	qword [const_2]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -299,14 +304,6 @@ func:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		mov		rdx, 31
-		xor		rax, rax
-		xor		rdi, rdi
-		mov		rsi, str
-		syscall
-		mov		rdi, str
-		call	atod
-		movsd	qword [rbp - 8], xmm0
 		jmp		.while0test
 .while0loop:
 		mov		rsi, str_7
@@ -359,7 +356,7 @@ func:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_4]
+		push	qword [const_3]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -367,7 +364,7 @@ func:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_5]
+		push	qword [const_4]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -376,7 +373,7 @@ func:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_6]
+		push	qword [const_5]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -390,7 +387,7 @@ func:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_7]
+		push	qword [const_6]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -479,7 +476,7 @@ SolveSquareEquation:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 8], xmm0
+		movsd	qword [rbp - 16], xmm0
 		mov		rsi, str_12
 		mov		rdi, 1
 		mov		rax, 1
@@ -525,7 +522,7 @@ SolveSquareEquation:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 16], xmm0
+		movsd	qword [rbp - 24], xmm0
 		mov		rsi, str_14
 		mov		rdi, 1
 		mov		rax, 1
@@ -571,18 +568,18 @@ SolveSquareEquation:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 24], xmm0
+		movsd	qword [rbp - 32], xmm0
+		push	qword [rbp - 32]
 		push	qword [rbp - 24]
 		push	qword [rbp - 16]
-		push	qword [rbp - 8]
 		call	NumSol
 		add		rsp, 24
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 32], xmm0
-		push	qword [rbp - 32]
+		movsd	qword [rbp - 40], xmm0
+		push	qword [rbp - 40]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -608,10 +605,10 @@ SolveSquareEquation:
 		mov		rsi, rsp
 		syscall
 		pop		rax
+		push	qword [rbp - 40]
 		push	qword [rbp - 32]
 		push	qword [rbp - 24]
 		push	qword [rbp - 16]
-		push	qword [rbp - 8]
 		call	Solve
 		add		rsp, 32
 .ret_SolveSquareEquation:
@@ -680,22 +677,22 @@ fubonacci:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 8], xmm0
-		push	qword [const_8]
+		movsd	qword [rbp - 48], xmm0
+		push	qword [const_7]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 16], xmm0
+		movsd	qword [rbp - 56], xmm0
 		jmp		.while1test
 .while1loop:
-		push	qword [rbp - 16]
+		push	qword [rbp - 56]
 		call	fib
 		add		rsp, 8
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 24], xmm0
-		push	qword [rbp - 16]
+		movsd	qword [rbp - 64], xmm0
+		push	qword [rbp - 56]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -713,7 +710,7 @@ fubonacci:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [rbp - 24]
+		push	qword [rbp - 64]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -739,8 +736,8 @@ fubonacci:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [rbp - 16]
-		push	qword [const_9]
+		push	qword [rbp - 56]
+		push	qword [const_8]
 		pop		qword [buffer]
 		movsd	xmm1, [buffer]
 		pop		qword [buffer]
@@ -750,12 +747,12 @@ fubonacci:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 16], xmm0
+		movsd	qword [rbp - 56], xmm0
 .while1test:
-		push	qword [rbp - 16]
+		push	qword [rbp - 56]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [rbp - 8]
+		push	qword [rbp - 48]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -827,22 +824,22 @@ factorial:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 8], xmm0
-		push	qword [const_10]
+		movsd	qword [rbp - 72], xmm0
+		push	qword [const_9]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 16], xmm0
+		movsd	qword [rbp - 80], xmm0
 		jmp		.while2test
 .while2loop:
-		push	qword [rbp - 16]
+		push	qword [rbp - 80]
 		call	fuck
 		add		rsp, 8
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 24], xmm0
-		push	qword [rbp - 16]
+		movsd	qword [rbp - 88], xmm0
+		push	qword [rbp - 80]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -860,7 +857,7 @@ factorial:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [rbp - 24]
+		push	qword [rbp - 88]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -886,8 +883,8 @@ factorial:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [rbp - 16]
-		push	qword [const_11]
+		push	qword [rbp - 80]
+		push	qword [const_10]
 		pop		qword [buffer]
 		movsd	xmm1, [buffer]
 		pop		qword [buffer]
@@ -897,12 +894,12 @@ factorial:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 16], xmm0
+		movsd	qword [rbp - 80], xmm0
 .while2test:
-		push	qword [rbp - 16]
+		push	qword [rbp - 80]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [rbp - 8]
+		push	qword [rbp - 72]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -921,14 +918,14 @@ fuck:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_12]
+		push	qword [const_11]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		je		.if2start
 		jmp		.if2else
 .if2start:
-		push	qword [const_13]
+		push	qword [const_12]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		jmp		.ret_fuck
@@ -936,7 +933,7 @@ fuck:
 .if2else:
 		push	qword [rbp - 8]
 		push	qword [rbp - 8]
-		push	qword [const_14]
+		push	qword [const_13]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		pop		qword [buffer]
@@ -972,7 +969,7 @@ fib:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_15]
+		push	qword [const_14]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -980,21 +977,21 @@ fib:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_16]
+		push	qword [const_15]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		je		.if3start
 		jmp		.if3else
 .if3start:
-		push	qword [const_17]
+		push	qword [const_16]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		jmp		.ret_fib
 		jmp		.if3end
 .if3else:
 		push	qword [rbp - 8]
-		push	qword [const_18]
+		push	qword [const_17]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		pop		qword [buffer]
@@ -1007,7 +1004,7 @@ fib:
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
 		push	qword [rbp - 8]
-		push	qword [const_19]
+		push	qword [const_18]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		pop		qword [buffer]
@@ -1070,31 +1067,31 @@ Solve:
 		push	qword [rbp - 32]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_20]
+		push	qword [const_19]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		je		.if4start
 		jmp		.if4else
 .if4start:
+		push	qword [const_20]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
+		movsd	qword [rbp - 96], xmm0
 		push	qword [const_21]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 40], xmm0
-		push	qword [const_22]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 48], xmm0
-		lea		rax, [rbp - 48]
+		movsd	qword [rbp - 104], xmm0
+		lea		rax, [rbp - 104]
 		push	rax
-		lea		rax, [rbp - 40]
+		lea		rax, [rbp - 96]
 		push	rax
 		push	qword [rbp - 24]
 		push	qword [rbp - 16]
 		push	qword [rbp - 8]
 		call	SolveSquare
 		add		rsp, 40
-		push	qword [rbp - 40]
+		push	qword [rbp - 96]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -1112,7 +1109,7 @@ Solve:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [rbp - 48]
+		push	qword [rbp - 104]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -1143,30 +1140,30 @@ Solve:
 		push	qword [rbp - 32]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_23]
+		push	qword [const_22]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		je		.if5start
 		jmp		.if5else
 .if5start:
-		push	qword [const_24]
+		push	qword [const_23]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 56], xmm0
+		movsd	qword [rbp - 112], xmm0
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_25]
+		push	qword [const_24]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		jne		.if6start
 		jmp		.if6else
 .if6start:
-		lea		rax, [rbp - 56]
+		lea		rax, [rbp - 112]
 		push	rax
-		lea		rax, [rbp - 56]
+		lea		rax, [rbp - 112]
 		push	rax
 		push	qword [rbp - 24]
 		push	qword [rbp - 16]
@@ -1175,7 +1172,7 @@ Solve:
 		add		rsp, 40
 		jmp		.if6end
 .if6else:
-		lea		rax, [rbp - 56]
+		lea		rax, [rbp - 112]
 		push	rax
 		push	qword [rbp - 24]
 		push	qword [rbp - 16]
@@ -1195,7 +1192,7 @@ Solve:
 		mov		rsi, rsp
 		syscall
 		pop		rax
-		push	qword [rbp - 56]
+		push	qword [rbp - 112]
 		mov		rdi, str
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
@@ -1226,7 +1223,7 @@ Solve:
 		push	qword [rbp - 32]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_26]
+		push	qword [const_25]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -1275,7 +1272,7 @@ Solve:
 		fldz
 		fstp	qword [buffer]
 		push	qword [buffer]
-		push	qword [const_27]
+		push	qword [const_26]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		pop		qword [buffer]
@@ -1344,7 +1341,7 @@ NumSol:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_28]
+		push	qword [const_27]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -1352,7 +1349,7 @@ NumSol:
 		push	qword [rbp - 16]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_29]
+		push	qword [const_28]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
@@ -1360,13 +1357,13 @@ NumSol:
 		push	qword [rbp - 24]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_30]
+		push	qword [const_29]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		jne		.if9else
 .if9start:
-		push	qword [const_31]
+		push	qword [const_30]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		jmp		.ret_NumSol
@@ -1375,14 +1372,14 @@ NumSol:
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_32]
+		push	qword [const_31]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		je		.if10start
 		jmp		.if10else
 .if10start:
-		push	qword [const_33]
+		push	qword [const_32]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		jmp		.ret_NumSol
@@ -1397,40 +1394,40 @@ NumSol:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 32], xmm0
-		push	qword [rbp - 32]
+		movsd	qword [rbp - 120], xmm0
+		push	qword [rbp - 120]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_34]
+		push	qword [const_33]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		jb		.if11start
 		jmp		.if11else
 .if11start:
-		push	qword [const_35]
+		push	qword [const_34]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		jmp		.ret_NumSol
 		jmp		.if11end
 .if11else:
-		push	qword [rbp - 32]
+		push	qword [rbp - 120]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		push	qword [const_36]
+		push	qword [const_35]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
 		comisd	xmm0, xmm1
 		je		.if12start
 		jmp		.if12else
 .if12start:
-		push	qword [const_37]
+		push	qword [const_36]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		jmp		.ret_NumSol
 		jmp		.if12end
 .if12else:
-		push	qword [const_38]
+		push	qword [const_37]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
 		jmp		.ret_NumSol
@@ -1467,7 +1464,7 @@ SolveSquare:
 		push	qword [buffer]
 		pop		qword [buffer]
 		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 48], xmm0
+		movsd	qword [rbp - 128], xmm0
 		fldz
 		fstp	qword [buffer]
 		push	qword [buffer]
@@ -1479,7 +1476,7 @@ SolveSquare:
 		subsd	xmm0, xmm1
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
-		push	qword [rbp - 48]
+		push	qword [rbp - 128]
 		pop		qword [buffer]
 		sqrtsd	xmm0, [buffer]
 		movsd	qword [buffer], xmm0
@@ -1491,7 +1488,7 @@ SolveSquare:
 		subsd	xmm0, xmm1
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
-		push	qword [const_39]
+		push	qword [const_38]
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
@@ -1521,7 +1518,7 @@ SolveSquare:
 		subsd	xmm0, xmm1
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
-		push	qword [rbp - 48]
+		push	qword [rbp - 128]
 		pop		qword [buffer]
 		sqrtsd	xmm0, [buffer]
 		movsd	qword [buffer], xmm0
@@ -1533,7 +1530,7 @@ SolveSquare:
 		addsd	xmm0, xmm1
 		movsd	qword [buffer], xmm0
 		push	qword [buffer]
-		push	qword [const_40]
+		push	qword [const_39]
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]
@@ -1613,105 +1610,15 @@ CalcDiscr:
 		movsd	xmm0, qword [rbp + 16]
 		movsd	qword [rbp - 8], xmm0
 		push	qword [rbp - 16]
+		push	qword [const_40]
+		pop		qword [buffer]
+		movsd	xmm1, [buffer]
+		pop		qword [buffer]
+		movsd	xmm0, qword [buffer]
+		call		pow
+		movsd	qword [buffer], xmm0
+		push	qword [buffer]
 		push	qword [const_41]
-		pop		qword [buffer]
-		movsd	xmm1, [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		call		pow
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		push	qword [const_42]
-		push	qword [rbp - 8]
-		pop		qword [buffer]
-		movsd	xmm1, qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		mulsd	xmm0, xmm1
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		push	qword [rbp - 24]
-		pop		qword [buffer]
-		movsd	xmm1, qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		mulsd	xmm0, xmm1
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm1, qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		subsd	xmm0, xmm1
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		jmp		.ret_CalcDiscr
-.ret_CalcDiscr:
-		leave
-		ret
-
-SolveLinear:
-		push	rbp
-		mov		rbp, rsp
-		sub		rsp, 32
-		mov		rax, [rbp + 32]
-		movsd	xmm0, qword [rax]
-		movsd	qword [rbp - 24], xmm0
-		movsd	xmm0, qword [rbp + 24]
-		movsd	qword [rbp - 16], xmm0
-		movsd	xmm0, qword [rbp + 16]
-		movsd	qword [rbp - 8], xmm0
-		fldz
-		fstp	qword [buffer]
-		push	qword [buffer]
-		push	qword [rbp - 16]
-		push	qword [rbp - 8]
-		pop		qword [buffer]
-		movsd	xmm1, [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		divsd	xmm0, xmm1
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm1, qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		subsd	xmm0, xmm1
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		movsd	qword [rbp - 24], xmm0
-.ret_SolveLinear:
-		mov		rax, [rbp + 32]
-		movsd	xmm0, qword [rbp - 24]
-		movsd	qword [rax], xmm0
-		leave
-		ret
-
-CalcDiscr:
-		push	rbp
-		mov		rbp, rsp
-		sub		rsp, 32
-		movsd	xmm0, qword [rbp + 32]
-		movsd	qword [rbp - 24], xmm0
-		movsd	xmm0, qword [rbp + 24]
-		movsd	qword [rbp - 16], xmm0
-		movsd	xmm0, qword [rbp + 16]
-		movsd	qword [rbp - 8], xmm0
-		push	qword [rbp - 16]
-		push	qword [const_43]
-		pop		qword [buffer]
-		movsd	xmm1, [buffer]
-		pop		qword [buffer]
-		movsd	xmm0, qword [buffer]
-		call		pow
-		movsd	qword [buffer], xmm0
-		push	qword [buffer]
-		push	qword [const_44]
 		push	qword [rbp - 8]
 		pop		qword [buffer]
 		movsd	xmm1, qword [buffer]

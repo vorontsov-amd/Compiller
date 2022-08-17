@@ -92,15 +92,9 @@ int DifferTree::Print()
 
 void DifferTree::GraphDump(const char* graphname)
 {
-	char* name = (char*)calloc(strlen(graphname) + 10, sizeof(char));
-	strcpy(name, "TreeDump/");
-	strcat(name, graphname);
+	std::string name = std::string("TreeDump/") + graphname;
+	std::string command = name + ".dot";
 	
-	size_t length = strlen(name) + 50;
-	char* command = new char[length] {};
-	strncpy(command, name, length);
-	strncat(command, ".dot", length);
-
 	std::ofstream dumpfile;
 	dumpfile.open(command);
 
@@ -110,22 +104,14 @@ void DifferTree::GraphDump(const char* graphname)
 
 	dumpfile.close();
 
-	strncpy(command, "iconv -f cp1251 -t utf-8 ", length);
-	strncat(command, name, length);
-	strncat(command, ".dot > ", length);
-	strncat(command, name, length);
-	strncat(command, "-utf8.dot", length);
-	system(command);
+	command = "iconv -f cp1251 -t utf-8 " + name + ".dot > " + name + "-utf8.dot";
+	const char* command_c = command.c_str();
+	system(command_c);
 
-	strncpy(command, "dot -Tpdf ", length);
-	strncat(command, name, length);
-	strncat(command, "-utf8.dot", length);
-	strncat(command, " -o ", length);
-	strncat(command, name, length);
-	strncat(command, ".pdf", length);
+	command = "dot -Tpdf " + name + "-utf8.dot -o " + name + ".pdf";
+	command_c = command.c_str();
 
-	system(command);
-	delete[] command;
+	system(command_c);
 }
 
 void DifferTree::DumpNode(std::ofstream& dumpfile, const node_t* node)

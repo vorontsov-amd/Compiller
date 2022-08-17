@@ -24,7 +24,7 @@ int main(int argc, char const *argv[])
 
 	List<DifferTree> tree = GetGrammar(lst);
     ProgrammDump(tree);
-    LOX  
+
     TranslateToAsm(tree, filename_code);
 }
 
@@ -57,18 +57,10 @@ void ProgrammDump(List<DifferTree> tree)
 
     for (int i = 0; i < size; i++)
     {
-        char* func = NameFunc(tree.ShowFront());
-        tree.ShowFront().GraphDump(func);
+        const char* funcname = MainFuncName(tree);
+        tree.ShowFront().GraphDump(funcname);
         tree.PopFront();
     }
-}
-
-char* NameFunc(DifferTree tree)
-{
-    tree.UpdateCurrent(answer::right);
-    char* str = tree.ShowCurrent()->value().string_ptr;
-    tree.UpdateCurrent(answer::root);
-    return str;
 }
 
 

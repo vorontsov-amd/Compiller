@@ -215,11 +215,19 @@ node_t* GetArgumentSequence(List<node_t>& programm, bool& no_string)
 
 node_t* GetStr(List<node_t>& programm)
 {
-	node_t* str = new node_t(programm.ShowFront());
-	str->SetDtype(DataType::CONST_STR);
+	std::string str = programm.ShowFront().Name();
+	/*node_t* str = new node_t(programm.ShowFront());
+	str->SetDtype(DataType::CONST_STR);*/
 	programm.PopFront();
+	
+	while (programm.ShowFront().dType() != DataType::QUOTE)
+	{
+		str += " ";
+		str += programm.ShowFront().Name();
+		programm.PopFront();
+	}
 	programm.PopFront();
-	return str;
+	return new node_t(NodeType::WORD, DataType::CONST_STR, str.c_str());
 }
 
 

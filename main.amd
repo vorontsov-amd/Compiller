@@ -1,6 +1,5 @@
 define func()
 {
-    var x = 0;
     print('Enter', 'number', 'test', 'programm');
     print(1, 'SolveSquareEquation');
     print(2, 'fubonacci');
@@ -157,18 +156,6 @@ define SolveLinear(new a, new b, x)
 {
     x = -b/a;
 }
-
-
-define CalcDiscr(new a, new b , new c)
-{
-	return b ^ 2 - 4 * a * c;
-}
-
-define SolveLinear(new a, new b, x)
-{
-    x = -b/a;
-}
-
 
 define CalcDiscr(new a, new b , new c)
 {
