@@ -1,5 +1,6 @@
 #include "Compiliter.h"
 
+#define LOX 
 
 void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
 {
@@ -160,19 +161,17 @@ void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, Stubs& stubs
 void AppendConst(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code)
 {    
     static int num_const = 0;
-    if (machine_code.stubsLoaded())
+    if (machine_code.constLoaded())
     {
-        num_const = 0;;
+        num_const = 0;
     }
-    
+
     double number = node->Num();
     std::string lbl_number = "const_" + std::to_string(num_const);
 
     fprintf(fasm, "%s: dq %lf\n", lbl_number.c_str(), number);
 
-    addr_t addres = machine_code.rodataStubs().p_vaddp + num_const * sizeof(double);
-    Label new_label(lbl_number.c_str(), addres);
-    stubs.labels.PushBack(new_label);
+    machine_code.AddLabel(lbl_number);
     machine_code.Append(number);
 
     num_const++;
@@ -647,34 +646,42 @@ void TransateCallSqtr(FILE* fasm, int& num_const_str, List<node_t>* functions, L
 void TranslateInit(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int initial_offset, Stubs& stubs, ByteArray& machine_code)
 {    
     node = node->GetRight();
-    static const char* last_call_func = funcname;
-    static int offset = initial_offset + sizeof(double);
-    static int offset_save = offset;
+    static std::string prev;
+    static int offset = initial_offset;
     if (stubs.rewind_init)
     {
-        offset = offset_save;
+        prev = "";
         stubs.rewind_init = false;
     }
 
-    if (last_call_func != funcname)
+    if (prev != funcname)
     {
-        offset = initial_offset + sizeof(double);
+        offset = initial_offset;
+        prev = funcname;
     }
+    offset += sizeof(double);
+
+    std::cout << "OFFSET " << offset << "\n";
+
     if (node->dType() == DataType::VARIABLE)
     {
         variable var(node, false, offset);
+        std::cout << "INIT " << prev << " " << funcname << " " << node->Name() << " " << offset << "\n";
         param->PushFront(var);
     }
     else if (node->dType() == DataType::MOV)
     {
         variable var(node->GetLeft(), false, offset);
+                std::cout << "INIT "<< prev << " " << funcname << " " << node->GetLeft()->Name() << " " << offset << "\n";
         param->PushFront(var);        
         LOX
         TranslateMov(fasm, num_const_str, functions, param, node, funcname, stubs, machine_code);
         LOX
     }
-    offset += sizeof(double);
-    last_call_func = funcname;
+    else
+    {
+        puts("WHAAAAAAAAAAAAAAAAt");
+    }
 }
 
 void TranslateMov(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code)

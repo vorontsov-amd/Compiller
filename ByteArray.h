@@ -88,7 +88,12 @@ namespace CMD
 
 void* memreverse(void* begin, size_t size);
 
+struct Stubs;
+class ByteArray;
+class Label;
 
+addr_t LabelAddr(Stubs& sturb, ByteArray& code);
+Label SearchLabel(const char* funcname, List<Label> lst);
 
 
 class Label
@@ -195,10 +200,17 @@ public:
     }
     
     bool stubsNotLoaded() { return stubs.is_loading; }
+    bool constLoaded() 
+    {  
+        bool status = stubs.rewind_const;
+        stubs.rewind_const = false; 
+        return status; 
+    }
     bool stubsLoaded() { return !stubs.is_loading; }
     addr_t e_point() const { return stubs.ElfStubs.e_entry; }
     PhdrStubs& dataStubs() {return stubs.ElfStubs.data_stubs; }
     PhdrStubs& rodataStubs() {return stubs.ElfStubs.rodata_stubs; }
+    void AddLabel(const std::string& lbl_name) { stubs.labels.PushBack(Label(lbl_name, LabelAddr(stubs, *this))); }
 };
 
 
@@ -215,8 +227,6 @@ template <typename T> index_t ByteArray::Append(const T cmd, size_t size_cmd)
     return cur_index;
 }
 
-addr_t LabelAddr(Stubs& sturb, ByteArray& code);
-Label SearchLabel(const char* funcname, List<Label> lst);
 
 void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void AppendJmpLabel(const char* labelname, Stubs& stubs, ByteArray& machine_code);
