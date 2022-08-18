@@ -147,8 +147,6 @@ index_t ByteArray::AppendBin(const uint8_t* func, size_t len)
 
 index_t ByteArray::Append(const char* func, size_t len)
 {    
-    LOX
-
     if (cur_index + len >= size - 1)
     {
         size_t new_size = (size + len > 2 * size) ? size + len : 2 * size;
@@ -158,12 +156,75 @@ index_t ByteArray::Append(const char* func, size_t len)
         delete[] array;
         array = new_array;
     }
-    LOX
-
     memcpy(array + cur_index, func, len);
     cur_index += len;
     return cur_index;
 }
+
+
+index_t ByteArray::Append(const cmd_t cmd, int size_cmd)
+{
+    if (cur_index + size_cmd >= size - 1)
+    {
+        array = (char*)realloc(array, 2 * size);
+        size = 2 * size;
+    }
+    memcpy(array + cur_index, &cmd, size_cmd);
+    memreverse(array + cur_index, size_cmd);
+    cur_index += size_cmd;
+    return cur_index;
+}
+
+
+index_t ByteArray::AppendCmd(const cmd_t cmd, int size_cmd)
+{
+    if (cur_index + size_cmd >= size - 1)
+    {
+        array = (char*)realloc(array, 2 * size);
+        size = 2 * size;
+    }
+    memcpy(array + cur_index, &cmd, size_cmd);
+    memreverse(array + cur_index, size_cmd);
+    cur_index += size_cmd;
+    return cur_index;
+}
+
+
+void ByteArray::AppendStdFunctions()
+{
+    FILE* func = fopen("all_1", "rb");
+    const size_t FILE_SIZE = 0x5b3;
+    const int DTOA_OFFSET = 0x4f;
+    const int ATOD_OFFSET = 0x476;
+    const int LOG_OFFSET  = 0x31;
+    
+    try
+    {
+        char* all = new char[FILE_SIZE] {0};
+        fread(all, 1, 0x5b3, func);
+
+        addr_t& pow_addres = stubs.addresses.pow_addres;
+
+        stubs.addresses.pow_addres    = Vaddr();
+        stubs.addresses.dtoa_addres   = pow_addres + DTOA_OFFSET;
+        stubs.addresses.atod_addres   = pow_addres + ATOD_OFFSET;
+        stubs.addresses.log10_adderes = pow_addres + LOG_OFFSET;
+
+        AddStdLabels();
+        
+        Append(all, FILE_SIZE);
+
+        fclose(func);
+        delete[] all;
+
+    }
+    catch(const std::bad_alloc& e)
+    {
+        std::cout << "bad allocated std function\n";
+        std::cerr << e.what();
+    }
+}
+
 
 
 const char* ByteArray::ByteCode() const
@@ -182,7 +243,7 @@ void ByteArray::Rewind()
 }
 
 
-void  ByteArray::AppendElfHeader()
+void ByteArray::AppendElfHeader()
 {
     const int NO_USE = 0;
 
@@ -245,6 +306,21 @@ void  ByteArray::AppendElfHeader()
 }
 
 
+void ByteArray::AppendCmd(cmd_t short_cmd, cmd_t long_cmd, int short_size_cmd, int32_t number)
+{
+    if (CHAR_MIN <= number && number <= CHAR_MAX)
+    {
+        uint8_t short_num = number % 0x100;
+        cmd_t cmd = short_cmd | short_num;
+        Append(cmd, short_size_cmd);
+    }
+    else
+    {
+        cmd_t cmd = long_cmd | number;
+        Append(cmd, short_size_cmd + 3);     
+    }
+}
+
 
 //--------------------------- End class ByteArray --------------------------
 
@@ -260,12 +336,12 @@ void AppendSubRspNum(uint32_t number, ByteArray& machine_code)
 {
     if (number < 0x80)
     {
-        uint32_t cmd = CMD::SUB_RSP_NUM_L | number;
+        cmd_t cmd = CMD::SUB_RSP_NUM_L | number;
         machine_code.Append(cmd, 4);
     }
     else
     {
-        uint64_t cmd = CMD::SUB_RSP_NUM_B | number;
+        cmd_t cmd = CMD::SUB_RSP_NUM_B | number;
         machine_code.Append(cmd, 7);
     }
 }
@@ -275,7 +351,7 @@ void AppendAddRspNum(uint32_t number, ByteArray& machine_code)
 {
     if (number < 0x80)
     {
-        uint32_t cmd = CMD::ADD_RSP_NUM_L | number;
+        cmd_t cmd = CMD::ADD_RSP_NUM_L | number;
         machine_code.Append(cmd, 4);
     }
     else
@@ -291,13 +367,13 @@ void AppendPushVar(uint32_t number, ByteArray& machine_code)
     if (number < 0x80)
     {
         uint8_t offset = -number % 0x100;
-        uint32_t cmd = CMD::PUSH_VAR_L | offset;
+        cmd_t cmd = CMD::PUSH_VAR_L | offset;
         machine_code.Append(cmd, 3);
     }
     else
     {
         uint32_t offset = -number;
-        uint64_t cmd = CMD::PUSH_VAR_B | offset;
+        cmd_t cmd = CMD::PUSH_VAR_B | offset;
         machine_code.Append(cmd, 6);
     }
 }
@@ -308,12 +384,12 @@ void AppendMovRaxVarPtr(uint32_t number, ByteArray& machine_code)
 {
     if (number < 0x80)
     {
-        uint32_t cmd = CMD::MOV_RAX_VAR_L | number;
+        cmd_t cmd = CMD::MOV_RAX_VAR_L | number;
         machine_code.Append(cmd, 4);
     }
     else
     {
-        uint64_t cmd = CMD::MOV_RAX_VAR_B | number;
+        cmd_t cmd = CMD::MOV_RAX_VAR_B | number;
         machine_code.Append(cmd, 7);
     }
 }
@@ -324,14 +400,16 @@ void AppendMovsdVarXmm0(uint32_t number, ByteArray& machine_code)
     if (number <= 0x80)
     {
         uint8_t offset = -number % 0x100;
-        uint64_t cmd = CMD::MOVSD_VAR_XMM0_L | offset;
+        cmd_t cmd = CMD::MOVSD_VAR_XMM0_L | offset;
         machine_code.Append(cmd, 5);
+
     }
     else
     {
         uint32_t offset = -number;
-        uint64_t cmd = CMD::MOVSD_VAR_XMM0_B | offset;
+        cmd_t cmd = CMD::MOVSD_VAR_XMM0_B | offset;
         machine_code.Append(cmd, 8);
+
     }
 }
 
@@ -341,13 +419,13 @@ void AppendMovsdXmm0Var(uint32_t number, ByteArray& machine_code)
     if (number <= 0x80)
     {
         uint8_t offset = -number % 0x100;
-        uint64_t cmd = CMD::MOVSD_XMM0_VAR_L | offset;
+        cmd_t cmd = CMD::MOVSD_XMM0_VAR_L | offset;
         machine_code.Append(cmd, 5);
     }
     else
     {
         uint32_t offset = -number;
-        uint64_t cmd = CMD::MOVSD_XMM0_VAR_B | offset;
+        cmd_t cmd = CMD::MOVSD_XMM0_VAR_B | offset;
         machine_code.Append(cmd, 8);
     }
 }
@@ -358,13 +436,13 @@ void AppendMovsdXmm0TempVar(uint32_t number, ByteArray& machine_code)
     if (number < 0x80)
     {
         uint8_t offset = number;
-        uint64_t cmd = CMD::MOVSD_XMM0_VAR_L | offset;
+        cmd_t cmd = CMD::MOVSD_XMM0_VAR_L | offset;
         machine_code.Append(cmd, 5);
     }
     else
     {
         uint32_t offset = number;
-        uint64_t cmd = CMD::MOVSD_XMM0_VAR_B | offset;
+        cmd_t cmd = CMD::MOVSD_XMM0_VAR_B | offset;
         machine_code.Append(cmd, 8);
     }
 }
@@ -375,13 +453,13 @@ void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code)
     if (number <= 0x80)
     {
         uint8_t offset = -number % 0x100;
-        uint64_t cmd = CMD::LEA_RAX_VAR_L | offset;
+        cmd_t cmd = CMD::LEA_RAX_VAR_L | offset;
         machine_code.Append(cmd, 4);
     }
     else
     {
         uint32_t offset = -number;
-        uint64_t cmd = CMD::LEA_RAX_VAR_B | offset;
+        cmd_t cmd = CMD::LEA_RAX_VAR_B | offset;
         machine_code.Append(cmd, 7);
     }
 }
@@ -389,7 +467,7 @@ void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code)
 void AppendMovRdiStr(Stubs& stubs, ByteArray& machone_code)
 {
     uint32_t addr = stubs.ElfStubs.data_stubs.p_vaddp + 8;
-    uint64_t cmd = CMD::MOV_RDI_NUM;
+    cmd_t cmd = CMD::MOV_RDI_NUM;
 
     machone_code.Append(cmd, 3);
     machone_code.Append(addr);
@@ -400,7 +478,7 @@ void AppendMovRdiStr(Stubs& stubs, ByteArray& machone_code)
 void AppendMovRsiStr(Stubs& stubs, ByteArray& machone_code)
 {
     uint32_t addr = stubs.ElfStubs.data_stubs.p_vaddp + 8;
-    uint64_t cmd = CMD::MOV_RSI_NUM;
+    cmd_t cmd = CMD::MOV_RSI_NUM;
 
     machone_code.Append(cmd, 3);
     machone_code.Append(addr);
@@ -439,7 +517,7 @@ void AppendJxxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray
     Label lbl = SearchLabel(labelname, stubs.labels);
     
     puts("FUCK");
-    uint64_t jmp = 0;
+    cmd_t jmp = 0;
     switch (node->dType())
     {
     case DataType::JE:
@@ -493,7 +571,7 @@ void AppendJnxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray
     
     Label lbl = SearchLabel(labelname, stubs.labels);
     
-    uint64_t jmp = 0;
+    cmd_t jmp = 0;
     switch (node->dType())
     {
     case DataType::JE:

@@ -9,7 +9,7 @@ variable::variable()
 }
 
 
-variable::variable(node_t* _var, bool _is_link, uint64_t _offset)
+variable::variable(node_t* _var, bool _is_link, uint32_t _offset)
 {
     assert(_var);
     const char* name = _var->Name();
@@ -28,7 +28,7 @@ variable::~variable()
 }
 
 
-uint64_t variable::Offset() const
+uint32_t variable::Offset() const
 {
     return offset;
 }
