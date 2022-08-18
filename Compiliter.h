@@ -25,12 +25,11 @@ struct TwoWhileStr
 
 void TranslateToAsm(List<DifferTree>& proga, const char* out_name);
 const char* ProgrammName(List<DifferTree>& proga);
-void StrToHex(const char* str, ByteArray& machine_code);
-const char* MainFuncName(List<DifferTree>& proga);
-void WritePreamble(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& machine_code);
-void PreambleRodata(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& machine_code);
-void PreambleData(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& machine_code);
-void TranslateProcessing(FILE* fasm, List<DifferTree>& proga, Stubs& stubs, ByteArray& machine_code);
+const char* FrontFuncName(List<DifferTree>& proga);
+void WritePreamble(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
+void PreambleRodata(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
+void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
+void TranslateProcessing(FILE* fasm, List<DifferTree> proga, Stubs& stubs, ByteArray& machine_code);
 List<node_t>* CreateLstFuncNode(List<DifferTree> proga);
 void TreeTranslate(FILE* fasm, DifferTree& function, List<node_t>* functions, Stubs& stubs, ByteArray& machine_code);
 void VerifyDefFunc(node_t* function);
@@ -50,10 +49,10 @@ void TranslateInit(FILE* fasm, int& num_const_str, List<node_t>* functions, List
 void TranslateMov(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void TranslateExp(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void WriteFuncEpilog(FILE* fasm, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
-void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree> proga, Stubs& stubs, ByteArray& machine_code);
-void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, Stubs& stubs, ByteArray& machine_code);
-void AppendConst(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code);
-void AppendStr(FILE* fasm, node_t* node, Stubs& stubs, ByteArray& machine_code);
+void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree> proga, ByteArray& machine_code);
+void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, ByteArray& machine_code);
+void AppendConst(FILE* fasm, node_t* node, ByteArray& machine_code);
+void AppendStr(FILE* fasm, node_t* node, ByteArray& machine_code);
 void TranslateIf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset, Stubs& stubs, ByteArray& machine_code);
 node_t* TranslateIfCondSeq(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, node_t* parrent, const ThreeIfStr& strings, bool have_else, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 const char* Jnx(node_t* node);
@@ -75,7 +74,7 @@ void TranslateRet(FILE* fasm, int& num_const_str, List<node_t>* functions, List<
 uint64_t OffsetVariable(List<variable>* lst, node_t* var_ptr);
 //void WriteELFHeader(Stubs& stubs, ByteArray& machine_code);
 void Test(ByteArray& machine_code);
-void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, Stubs& stubs, ByteArray& machine_code);
+void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, ByteArray& machine_code);
 void WriteStdFunctions(Stubs& stubs, ByteArray& machine_code);
 void TranslateCallLog(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);
 void TransateCallCos(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, Stubs& stubs, ByteArray& machine_code);

@@ -216,25 +216,12 @@ node_t* GetArgumentSequence(List<node_t>& programm, bool& no_string)
 node_t* GetStr(List<node_t>& programm)
 {
 	std::string str = programm.ShowFront().Name();
-	/*node_t* str = new node_t(programm.ShowFront());
-	str->SetDtype(DataType::CONST_STR);*/
 	programm.PopFront();
 	
 	while (programm.ShowFront().dType() != DataType::QUOTE)
 	{
 		str += " ";
-		
-		node_t next = programm.ShowFront();
-		if (next.Type() == NodeType::NUMBER)
-		{
-			std::string num = std::to_string(next.value().number);
-			str += num;
-		}
-		else
-		{
-			str += next.Name();
-		}
-
+		str += programm.ShowFront().Name();
 		programm.PopFront();
 	}
 	programm.PopFront();
@@ -253,14 +240,6 @@ node_t* GetNewVar(List<node_t>& programm)
 	else return GetVar(programm);
 }
 
-
-char* Funcname(node_t& func)
-{
-	char* funcname = new char[strlen(func.value().string_ptr) + 3];
-	strcpy(funcname, func.value().string_ptr);
-	strcat(funcname, "()");
-	return funcname;
-}
 
 node_t* GetInit(List<node_t>& programm)
 {
@@ -323,6 +302,7 @@ void CheckClsRoundBr(List<node_t>& programm)
 {
 	if (programm.ShowFront().dType() != DataType::CLS_ROUND_BR)
 	{
+		std::cout << programm.ShowFront();
 		fprintf(stderr, "Missing closing bracket ')'\n");
 		exit(EXIT_FAILURE);
 	}
@@ -429,8 +409,10 @@ node_t* GetCondTerm(List<node_t>& programm)
 	{
 		programm.PopFront();
 		node_t* cond2 = GetPrimaryCondExpression(programm);
+		std::cout << *cond2 << "\n";
 		cond = new node_t(NodeType::OPERATOR, DataType::AND, "&&", cond, cond2);
 	}
+	LOX
 	return cond;	
 }
 

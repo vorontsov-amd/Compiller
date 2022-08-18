@@ -145,6 +145,27 @@ index_t ByteArray::AppendBin(const uint8_t* func, size_t len)
 }
 
 
+index_t ByteArray::Append(const char* func, size_t len)
+{    
+    LOX
+
+    if (cur_index + len >= size - 1)
+    {
+        size_t new_size = (size + len > 2 * size) ? size + len : 2 * size;
+        char* new_array = new char[new_size] {};
+        memcpy(new_array, array, size);
+        size = new_size;
+        delete[] array;
+        array = new_array;
+    }
+    LOX
+
+    memcpy(array + cur_index, func, len);
+    cur_index += len;
+    return cur_index;
+}
+
+
 const char* ByteArray::ByteCode() const
 {
     return array;
@@ -234,7 +255,6 @@ addr_t LabelAddr(Stubs& st, ByteArray& code)
     addr_t addr = code.e_point() + code.Size();
     return addr;
 }
-
 
 void AppendSubRspNum(uint32_t number, ByteArray& machine_code)
 {
@@ -388,15 +408,15 @@ void AppendMovRsiStr(Stubs& stubs, ByteArray& machone_code)
 }
 
 
-void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code)
+void ByteArray::AppendCallFunc(const char* funcname)
 {
     Label lbl = SearchLabel(funcname, stubs.labels);
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
+    uint32_t distance = lbl.Addres() - Vaddr();
 
     distance = (distance > 0) ? distance - 5 : distance + 5;
 
-    machine_code.Append(CMD::CALL_ADDR, 1);
-    machine_code.Append(distance);
+    Append(CMD::CALL_ADDR, 1);
+    Append(distance);
 }
 
 

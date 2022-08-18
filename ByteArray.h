@@ -175,6 +175,8 @@ public:
     index_t Append(const double num);
     index_t Append(const char* func, size_t len);
     void AppendElfHeader();
+    void AppendCallFunc(const char* funcname);
+
 
 
     //index_t Append(const uint64_t num);
@@ -206,12 +208,20 @@ public:
         stubs.rewind_const = false; 
         return status; 
     }
+    bool stringLoaded()
+    {
+        bool status = stubs.rewind_const_str;
+        stubs.rewind_const = false; 
+        return status; 
+    }
     bool stubsLoaded() { return !stubs.is_loading; }
     addr_t e_point() const { return stubs.ElfStubs.e_entry; }
-    PhdrStubs& dataStubs() {return stubs.ElfStubs.data_stubs; }
-    PhdrStubs& rodataStubs() {return stubs.ElfStubs.rodata_stubs; }
-    void AddLabel(const std::string& lbl_name) { stubs.labels.PushBack(Label(lbl_name, LabelAddr(stubs, *this))); }
+    PhdrStubs& dataStubs() { return stubs.ElfStubs.data_stubs; }
+    PhdrStubs& rodataStubs() { return stubs.ElfStubs.rodata_stubs; }
+    PhdrStubs& textStubs() { return stubs.ElfStubs.text_stubs; }
+    void AddLabel(const std::string& lbl_name) { stubs.labels.PushBack(Label(lbl_name, Vaddr())); }
 };
+
 
 
 template <typename T> index_t ByteArray::Append(const T cmd, size_t size_cmd)
@@ -226,6 +236,7 @@ template <typename T> index_t ByteArray::Append(const T cmd, size_t size_cmd)
     cur_index += size_cmd;
     return cur_index;
 }
+
 
 
 void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code);

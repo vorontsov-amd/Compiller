@@ -1,5 +1,4 @@
 #include "data_t.h"
-#include <cassert>
 
 #define function(f)				\
 	if (strcmp(func, #f) == 0)	 \
@@ -79,16 +78,7 @@ std::ostream& operator<< (std::ostream& stream, const data_t& data)
 data_t::data_t(data_t& data)
 {
 	type = data.type;
-	if (type == DataType::CONSTANT)
-	{
-		value.number = data.value.number;
-	}
-	else 
-	{
-		const char* str = data.value.string_ptr;
-		value.string_ptr = new char[strlen(str) + 1];
-		strcpy(value.string_ptr, str);
-	}
+	value = data.value;
 }
 
 data_t::data_t(DataType::dataType _type, double _value)
@@ -124,19 +114,8 @@ data_t::~data_t()
 
 data_t& data_t::operator=(const data_t& data)
 {
-	if (type != DataType::CONSTANT)
-		delete value.string_ptr;
-
 	type = data.type;
-
-	if (type == DataType::CONSTANT)
-		value.number = data.value.number;
-	else 
-	{
-		const char* str = data.value.string_ptr;
-		value.string_ptr = new char[strlen(str) + 1];
-		strcpy(value.string_ptr, str);
-	}
+	value = data.value;
 	return *this;
 }
 //-------------------------------END-----------------------------------------
@@ -246,8 +225,9 @@ node_t::node_t(const NodeType::nodeType N_type, const DataType::dataType D_type,
 	right = _right;
 }
 
-node_t::node_t(node_t& node) : data(node.data)
+node_t::node_t(node_t& node)
 {
+	data = node.data;
 	type = node.type;
 	if (node.left != nullptr)
 	{
@@ -268,8 +248,9 @@ node_t::node_t(node_t& node) : data(node.data)
 	}
 }
 
-node_t::node_t(node_t* node) : data(node->data)
+node_t::node_t(node_t* node)
 {
+	data = node->data;
 	type = node->type;
 	if (node->left != nullptr)
 	{
