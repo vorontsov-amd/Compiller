@@ -70,7 +70,7 @@ namespace CMD
     const cmd_t MOV_RDX_31 = 0x48c7c21f000000;
     const cmd_t XOR_RAX_RAX = 0x4831c0;
     const cmd_t INC_RDX = 0x48ffc2;
-    const cmd_t MOV_RAX_CHARACTER = 0x48c7c0;
+    const cmd_t MOV_RAX_NUMBER = 0x48c7c0;
     const cmd_t MOV_RDX_1 = 0x48c7c201000000;
     const cmd_t MOV_RSI_RSP = 0x4889e6;
     const cmd_t POP_RAX = 0x58;
@@ -91,7 +91,7 @@ class ByteArray;
 class Label;
 
 addr_t LabelAddr(Stubs& sturb, ByteArray& code);
-Label SearchLabel(const char* funcname, List<Label> lst);
+Label SearchLabel(const std::string& str, List<Label> lst);
 
 
 class Label
@@ -163,53 +163,50 @@ struct Stubs
 class ByteArray
 {
 private:
+    Stubs stubs;
     char* array;
     size_t size;
     index_t cur_index;
 public:
-    Stubs stubs;
     ByteArray();
     ByteArray(const char* _array, const size_t _size);
     ~ByteArray();
 
-    //index_t Append(const char ch);
     index_t Append(const Elf64_Ehdr ehdr);
     index_t Append(const Elf64_Phdr phdr);
     index_t Append(const uint32_t ch);
-    index_t Append(const uint8_t num);
     index_t Append(const double num);
     index_t Append(const char* func, size_t len);
     void AppendElfHeader();
     void AppendCallFunc(const char* funcname);
+    void AppendJmpLabel(const std::string& labelname);
+    void AppendJxxLabel(const std::string& labelname, node_t* node);
+    void AppendJnxLabel(const std::string& labelname, node_t* node);
+    void AppendPushConst(int num_const);
     void AppendStdFunctions();
     void AppendCmd(cmd_t short_cmd, cmd_t long_cmd, int size_cmd, int32_t number);
     index_t AppendCmd(cmd_t cmd, int size_cmd);
-
-
-
-    //index_t Append(const uint64_t num);
-    index_t Append(const cmd_t cmd, int size_cmd);
-    index_t AppendBin(const uint8_t* cmd, size_t size);
-
-    uint8_t* ShowMemory(size_t offset, size_t length)
+    void AppendCmd(cmd_t cmd, uint32_t addr, int size_cmd);
+    const char* ShowMemory(size_t offset, size_t length)
     {
-        uint8_t* memory = new uint8_t[length] {0};
+        char* memory = new char[length] {0};
         for (int i = 0; i < length; i++)
         {
             memory[i] = array[offset + i];
         }
         return memory;
     }
-
     const char* ByteCode() const;
     size_t Size() const;
-    void Rewind();
+    void Reset();
     addr_t Vaddr() const
     {
         return e_point() + cur_index;
     }
-    
-    bool stubsNotLoaded() { return stubs.is_loading; }
+    uint32_t buf() { return stubs.ElfStubs.data_stubs.p_vaddp; }
+    uint32_t string_buf() { return stubs.ElfStubs.data_stubs.p_vaddp + sizeof(double); }
+
+    bool stubsNotLoaded() const { return stubs.is_loading; }
     bool resetConstDeclCounter() 
     {  
         bool status = stubs.reset_const;
@@ -228,6 +225,30 @@ public:
         stubs.reset_const_str_printf = false; 
         return status;         
     }
+    bool resetOffset()
+    {
+        bool status = stubs.reset_init;
+        stubs.reset_init = false;
+        return status;
+    }
+    bool resetWhile()
+    {
+        bool status = stubs.reset_while;
+        stubs.reset_while = false;
+        return status; 
+    }
+    bool resetIf()
+    {
+        bool status = stubs.reset_if;
+        stubs.reset_if = false;
+        return status;
+    }
+    bool resetConstExprCounter()
+    {
+        bool status = stubs.reset_const_expr;
+        stubs.reset_const_expr = false; 
+        return status;         
+    }
     addr_t e_point() const { return stubs.ElfStubs.e_entry; }
     PhdrStubs& dataStubs() { return stubs.ElfStubs.data_stubs; }
     PhdrStubs& rodataStubs() { return stubs.ElfStubs.rodata_stubs; }
@@ -242,24 +263,17 @@ public:
         AddLabel("atod", stubs.addresses.atod_addres);
         AddLabel("log10", stubs.addresses.log10_adderes);
     }
+    auto string_info(std::string str)
+    {
+        Label str_lbl = SearchLabel(str.c_str(), stubs.labels);
+        addr_t virtual_addr_mark = str_lbl.Addres();
+        addr_t offset_in_file = virtual_addr_mark - e_point();
+        const char* bytes = ShowMemory(offset_in_file, 4);
+        uint32_t str_length = 0;
+        memcpy(&str_length, bytes, 4);
+        addr_t str_vaddr = virtual_addr_mark + sizeof(uint32_t);
+
+        delete[] bytes;
+        return std::pair(str_vaddr, str_length);
+    }
 };
-
-
-
-
-
-void AppendCallFunc(const char* funcname, Stubs& stubs, ByteArray& machine_code);
-void AppendJmpLabel(const char* labelname, Stubs& stubs, ByteArray& machine_code);
-void AppendJxxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray& machine_code);
-void AppendJnxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray& machine_code);
-void AppendPushConst(int num_const, Stubs& stubs, ByteArray& machine_code);
-void AppendSubRspNum(uint32_t number, ByteArray& machine_code);
-void AppendAddRspNum(uint32_t number, ByteArray& machine_code);
-void AppendMovRaxVarPtr(uint32_t number, ByteArray& machine_code);
-void AppendMovsdVarXmm0(uint32_t number, ByteArray& machine_code);
-void AppendMovsdXmm0Var(uint32_t number, ByteArray& machine_code);
-void AppendMovsdXmm0TempVar(uint32_t number, ByteArray& machine_code);
-void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code);
-void AppendPushVar(uint32_t number, ByteArray& machine_code);
-void AppendMovRdiStr(Stubs& stubs, ByteArray& machone_code);
-void AppendMovRsiStr(Stubs& stubs, ByteArray& machone_code);

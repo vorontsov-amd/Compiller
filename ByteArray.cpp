@@ -6,11 +6,9 @@
 ByteArray::ByteArray()
 {
     array = new char[1024] {};
-
     size = 1024;
     cur_index = 0;
 }
-
 
 ByteArray::ByteArray(const char* _array, const size_t _size)
 {
@@ -20,7 +18,6 @@ ByteArray::ByteArray(const char* _array, const size_t _size)
     cur_index = 0;
 }
 
-
 ByteArray::~ByteArray()
 {
     if (array)
@@ -29,18 +26,6 @@ ByteArray::~ByteArray()
         array = nullptr;
     }
 }
-
-
-// index_t ByteArray::Append(const char ch)
-// {
-//     if (cur_index == size - 1)
-//     {
-//         array = (char*)realloc(array, 2 * size);
-//         size = 2 * size;
-//     }
-//     array[cur_index++] = ch;
-//     return cur_index;
-// }
 
 
 index_t ByteArray::Append(const Elf64_Ehdr ehdr)
@@ -76,21 +61,6 @@ index_t ByteArray::Append(const Elf64_Phdr phdr)
 }
 
 
-
-// index_t ByteArray::Append(const int num)
-// {
-//     if (cur_index == size - 1)
-//     {
-//         array = (char*)realloc(array, 2 * size);
-//         size = 2 * size;
-//     }
-//     memcpy(array + cur_index, &num, sizeof(num));
-//     cur_index += sizeof(num);
-//     return cur_index;
-// }
-
-
-
 index_t ByteArray::Append(const double num)
 {
     
@@ -107,7 +77,6 @@ index_t ByteArray::Append(const double num)
     return cur_index;
 }
 
-
 index_t ByteArray::Append(const addr_t num)
 {    
     if (cur_index + sizeof(num) >= size - 1)
@@ -122,28 +91,6 @@ index_t ByteArray::Append(const addr_t num)
     cur_index += sizeof(num);
     return cur_index;
 }
-
-
-index_t ByteArray::AppendBin(const uint8_t* func, size_t len)
-{    
-    LOX
-
-    if (cur_index + len >= size - 1)
-    {
-        size_t new_size = (size + len > 2 * size) ? size + len : 2 * size;
-        char* new_array = new char[new_size] {};
-        memcpy(new_array, array, size);
-        size = new_size;
-        delete[] array;
-        array = new_array;
-    }
-    LOX
-
-    memcpy(array + cur_index, func, len);
-    cur_index += len;
-    return cur_index;
-}
-
 
 index_t ByteArray::Append(const char* func, size_t len)
 {    
@@ -160,21 +107,6 @@ index_t ByteArray::Append(const char* func, size_t len)
     cur_index += len;
     return cur_index;
 }
-
-
-index_t ByteArray::Append(const cmd_t cmd, int size_cmd)
-{
-    if (cur_index + size_cmd >= size - 1)
-    {
-        array = (char*)realloc(array, 2 * size);
-        size = 2 * size;
-    }
-    memcpy(array + cur_index, &cmd, size_cmd);
-    memreverse(array + cur_index, size_cmd);
-    cur_index += size_cmd;
-    return cur_index;
-}
-
 
 index_t ByteArray::AppendCmd(const cmd_t cmd, int size_cmd)
 {
@@ -225,8 +157,6 @@ void ByteArray::AppendStdFunctions()
     }
 }
 
-
-
 const char* ByteArray::ByteCode() const
 {
     return array;
@@ -237,11 +167,18 @@ size_t ByteArray::Size() const
     return cur_index;
 }
 
-void ByteArray::Rewind()
+void ByteArray::Reset()
 {
     cur_index = 0;
+    stubs.is_loading = false;
+    stubs.reset_const = true;
+    stubs.reset_if = true;
+    stubs.reset_while = true;
+    stubs.reset_init = true;
+    stubs.reset_const_expr = true;
+    stubs.reset_const_str = true;
+    stubs.reset_const_str_printf = true;
 }
-
 
 void ByteArray::AppendElfHeader()
 {
@@ -305,184 +242,33 @@ void ByteArray::AppendElfHeader()
     Append(text_header);
 }
 
-
 void ByteArray::AppendCmd(cmd_t short_cmd, cmd_t long_cmd, int short_size_cmd, int32_t number)
 {
     if (CHAR_MIN <= number && number <= CHAR_MAX)
     {
         uint8_t short_num = number % 0x100;
         cmd_t cmd = short_cmd | short_num;
-        Append(cmd, short_size_cmd);
+        AppendCmd(cmd, short_size_cmd);
     }
     else
     {
         cmd_t cmd = long_cmd | number;
-        Append(cmd, short_size_cmd + 3);     
+        AppendCmd(cmd, short_size_cmd + 3);     
     }
 }
 
 
-//--------------------------- End class ByteArray --------------------------
+void ByteArray::AppendCmd(cmd_t cmd, uint32_t addr, int size_cmd)
+{
+    AppendCmd(cmd, size_cmd);
+    Append(addr);
+}
 
-//---------------------------- Begin class Label ----------------------------
 
 addr_t LabelAddr(Stubs& st, ByteArray& code)
 {
     addr_t addr = code.e_point() + code.Size();
     return addr;
-}
-
-void AppendSubRspNum(uint32_t number, ByteArray& machine_code)
-{
-    if (number < 0x80)
-    {
-        cmd_t cmd = CMD::SUB_RSP_NUM_L | number;
-        machine_code.Append(cmd, 4);
-    }
-    else
-    {
-        cmd_t cmd = CMD::SUB_RSP_NUM_B | number;
-        machine_code.Append(cmd, 7);
-    }
-}
-
-
-void AppendAddRspNum(uint32_t number, ByteArray& machine_code)
-{
-    if (number < 0x80)
-    {
-        cmd_t cmd = CMD::ADD_RSP_NUM_L | number;
-        machine_code.Append(cmd, 4);
-    }
-    else
-    {
-        uint64_t cmd = CMD::ADD_RSP_NUM_B | number;
-        machine_code.Append(cmd, 7);
-    }
-}
-
-
-void AppendPushVar(uint32_t number, ByteArray& machine_code)
-{
-    if (number < 0x80)
-    {
-        uint8_t offset = -number % 0x100;
-        cmd_t cmd = CMD::PUSH_VAR_L | offset;
-        machine_code.Append(cmd, 3);
-    }
-    else
-    {
-        uint32_t offset = -number;
-        cmd_t cmd = CMD::PUSH_VAR_B | offset;
-        machine_code.Append(cmd, 6);
-    }
-}
-
-
-
-void AppendMovRaxVarPtr(uint32_t number, ByteArray& machine_code)
-{
-    if (number < 0x80)
-    {
-        cmd_t cmd = CMD::MOV_RAX_VAR_L | number;
-        machine_code.Append(cmd, 4);
-    }
-    else
-    {
-        cmd_t cmd = CMD::MOV_RAX_VAR_B | number;
-        machine_code.Append(cmd, 7);
-    }
-}
-
-
-void AppendMovsdVarXmm0(uint32_t number, ByteArray& machine_code)
-{
-    if (number <= 0x80)
-    {
-        uint8_t offset = -number % 0x100;
-        cmd_t cmd = CMD::MOVSD_VAR_XMM0_L | offset;
-        machine_code.Append(cmd, 5);
-
-    }
-    else
-    {
-        uint32_t offset = -number;
-        cmd_t cmd = CMD::MOVSD_VAR_XMM0_B | offset;
-        machine_code.Append(cmd, 8);
-
-    }
-}
-
-
-void AppendMovsdXmm0Var(uint32_t number, ByteArray& machine_code)
-{
-    if (number <= 0x80)
-    {
-        uint8_t offset = -number % 0x100;
-        cmd_t cmd = CMD::MOVSD_XMM0_VAR_L | offset;
-        machine_code.Append(cmd, 5);
-    }
-    else
-    {
-        uint32_t offset = -number;
-        cmd_t cmd = CMD::MOVSD_XMM0_VAR_B | offset;
-        machine_code.Append(cmd, 8);
-    }
-}
-
-
-void AppendMovsdXmm0TempVar(uint32_t number, ByteArray& machine_code)
-{
-    if (number < 0x80)
-    {
-        uint8_t offset = number;
-        cmd_t cmd = CMD::MOVSD_XMM0_VAR_L | offset;
-        machine_code.Append(cmd, 5);
-    }
-    else
-    {
-        uint32_t offset = number;
-        cmd_t cmd = CMD::MOVSD_XMM0_VAR_B | offset;
-        machine_code.Append(cmd, 8);
-    }
-}
-
-
-void AppendLeaRaxVar(uint32_t number, ByteArray& machine_code)
-{
-    if (number <= 0x80)
-    {
-        uint8_t offset = -number % 0x100;
-        cmd_t cmd = CMD::LEA_RAX_VAR_L | offset;
-        machine_code.Append(cmd, 4);
-    }
-    else
-    {
-        uint32_t offset = -number;
-        cmd_t cmd = CMD::LEA_RAX_VAR_B | offset;
-        machine_code.Append(cmd, 7);
-    }
-}
-
-void AppendMovRdiStr(Stubs& stubs, ByteArray& machone_code)
-{
-    uint32_t addr = stubs.ElfStubs.data_stubs.p_vaddp + 8;
-    cmd_t cmd = CMD::MOV_RDI_NUM;
-
-    machone_code.Append(cmd, 3);
-    machone_code.Append(addr);
-
-}
-
-
-void AppendMovRsiStr(Stubs& stubs, ByteArray& machone_code)
-{
-    uint32_t addr = stubs.ElfStubs.data_stubs.p_vaddp + 8;
-    cmd_t cmd = CMD::MOV_RSI_NUM;
-
-    machone_code.Append(cmd, 3);
-    machone_code.Append(addr);
-
 }
 
 
@@ -493,61 +279,48 @@ void ByteArray::AppendCallFunc(const char* funcname)
 
     distance = (distance > 0) ? distance - 5 : distance + 5;
 
-    Append(CMD::CALL_ADDR, 1);
+    AppendCmd(CMD::CALL_ADDR, 1);
     Append(distance);
 }
 
 
-void AppendJmpLabel(const char* labelname, Stubs& stubs, ByteArray& machine_code)
+void ByteArray::AppendJmpLabel(const std::string& labelname)
 {
     Label lbl = SearchLabel(labelname, stubs.labels);
 
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
+    uint32_t distance = lbl.Addres() - Vaddr();
 
     distance = (distance > 0) ? distance - 5 : distance + 5;
 
-    machine_code.Append(CMD::JMP_ADDR, 1);
-    machine_code.Append(distance);
+    AppendCmd(CMD::JMP_ADDR, 1);
+    Append(distance);
 }
 
 
-void AppendJxxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray& machine_code)
+void ByteArray::AppendJxxLabel(const std::string& labelname, node_t* node)
 {
     
     Label lbl = SearchLabel(labelname, stubs.labels);
     
-    puts("FUCK");
     cmd_t jmp = 0;
     switch (node->dType())
     {
     case DataType::JE:
-            puts("JE");
-
         jmp = CMD::JE_ADDR;
         break;
     case DataType::JNE:
-            puts("JNE");
-
         jmp = CMD::JNE_ADDR;
         break;
     case DataType::JA:
-            puts("JA");
-
         jmp = CMD::JA_ADDR;
         break;
     case DataType::JAE:
-            puts("JAE");
-
         jmp = CMD::JAE_ADDR;
         break;
     case DataType::JB:
-            puts("JB");
-
         jmp = CMD::JB_ADDR;
         break;
     case DataType::JBE:
-        puts("JBE");
-        puts(node->value().string_ptr);
         jmp = CMD::JBE_ADDR;
         break;
     default:
@@ -557,16 +330,16 @@ void AppendJxxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray
 
 
 
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
+    uint32_t distance = lbl.Addres() - Vaddr();
     distance = (distance > 0) ? distance - 6 : distance + 6;
 
-    machine_code.Append(jmp, 2);
-    machine_code.Append(distance);
+    AppendCmd(jmp, 2);
+    Append(distance);
 }
 
 
 
-void AppendJnxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray& machine_code)
+void ByteArray::AppendJnxLabel(const std::string& labelname, node_t* node)
 {
     
     Label lbl = SearchLabel(labelname, stubs.labels);
@@ -598,27 +371,25 @@ void AppendJnxLabel(const char* labelname, node_t* node, Stubs& stubs, ByteArray
     }
 
 
-    uint32_t distance = lbl.Addres() - machine_code.Vaddr();
+    uint32_t distance = lbl.Addres() - Vaddr();
     distance = (distance > 0) ? distance - 6 : distance + 6;
 
-    machine_code.Append(jmp, 2);
-    machine_code.Append(distance);
+    AppendCmd(jmp, 2);
+    Append(distance);
 }
 
 
-void AppendPushConst(int num_const, Stubs& stubs, ByteArray& machine_code)
+void ByteArray::AppendPushConst(int num_const)
 {
-    char name[20] = "";
-    snprintf(name, 20, "const_%d", num_const);
-    
+    std::string name = "const_" + std::to_string(num_const);
+
     Label lbl = SearchLabel(name, stubs.labels);
 
-    machine_code.Append(CMD::PUSH_M64, 3);
-    machine_code.Append(lbl.Addres());
+    AppendCmd(CMD::PUSH_M64, lbl.Addres(), 3);
 }
 
 
-Label SearchLabel(const char* funcname, List<Label> lst)
+Label SearchLabel(const std::string& funcname, List<Label> lst)
 {    
     for (int i = 0, size = lst.Size(); i < size; i++)
     {

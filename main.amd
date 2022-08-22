@@ -1,11 +1,19 @@
-define SolveSquareEquation()
+
+define func()
 {
-    var a = input('enter a');
-    var b = input('enter b');
-    var c = input('enter c');
-    var num_sol = NumSol(a, b, c);
-    print(num_sol);
-    Solve(a, b, c, num_sol);
+    var x = 0;
+    print('Enter', 'number', 'test', 'programm');
+    print(1, 'SolveSquareEquation');
+    print(2, 'fibonacci and factorial');
+    input(x);
+
+    while (x < 1 || x > 2)
+    {
+        x = input('try again');
+    };
+    if (x == 1) { SolveSquareEquation(); }
+    else if (x == 2) { func1(); };
+    print('Done');
 }
 
 
@@ -25,6 +33,16 @@ define func1()
 
 
 
+
+define SolveSquareEquation()
+{
+    var a = input('enter a');
+    var b = input('enter b');
+    var c = input('enter c');
+    var num_sol = NumSol(a, b, c);
+    print(num_sol);
+    Solve(a, b, c, num_sol);
+}
 
 
 
@@ -141,5 +159,5 @@ define SolveLinear(new a, new b, x)
 
 define CalcDiscr(new a, new b , new c)
 {
-	return b * b - 4 * a * c;
+    return b * b - 4 * a * c;
 }
