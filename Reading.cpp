@@ -409,10 +409,8 @@ node_t* GetCondTerm(List<node_t>& programm)
 	{
 		programm.PopFront();
 		node_t* cond2 = GetPrimaryCondExpression(programm);
-		std::cout << *cond2 << "\n";
 		cond = new node_t(NodeType::OPERATOR, DataType::AND, "&&", cond, cond2);
 	}
-	LOX
 	return cond;	
 }
 

@@ -40,8 +40,6 @@ public:
 	int TreeScan(const char* filename = "formula.txt");
 	int Print();
 	void GraphDump(const char* graphname = "Dump");
-	node_t* ShowCurrent();
-	node_t* UpdateCurrent(answer ans);
 	DifferTree& operator=(const DifferTree& tree);
 
 
@@ -52,7 +50,6 @@ public:
 
 private:
 	node_t* root;
-	node_t* current_node;
 
 	void CreateNode(const data_t& data, node_t*& node);
 	void Read(std::ifstream& file, node_t*& node, data_t& element);

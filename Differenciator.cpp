@@ -5,32 +5,27 @@
 DifferTree::DifferTree()
 {
 	root = nullptr;
-	current_node = root;
 }
 
 DifferTree::DifferTree(DifferTree& tree)
 {
 	root = new node_t(tree.root);
-	current_node = root;
 }
 
 DifferTree::DifferTree(DifferTree&& tree)
 {
 	root = new node_t(tree.root);
-	current_node = root;
 }
 
 
 DifferTree::DifferTree(node_t* _root)
 {
 	root = new node_t(_root);
-	current_node = root;
 }
 
 DifferTree::DifferTree(node_t& _root)
 {
 	root = new node_t(_root);
-	current_node = root;
 }
 
 DifferTree::~DifferTree()
@@ -158,29 +153,6 @@ void DifferTree::SwapSon(node_t* parrent)
 }
 
 
-node_t* DifferTree::ShowCurrent()
-{
-	return current_node;
-}
-node_t* DifferTree::UpdateCurrent(answer ans)
-{
-	if (ans == answer::right)
-	{
-		if (current_node->right) current_node = current_node->right;
-		else return nullptr;
-	}
-	else if (ans == answer::left)
-	{
-		if (current_node->left) current_node = current_node->left;
-		else return nullptr;
-	}
-	else if (ans == answer::root)
-	{
-		current_node = root;
-	}
-	return current_node;
-}
-
 DifferTree& DifferTree::operator=(const DifferTree& tree)
 {
 	if (root == nullptr)
@@ -190,7 +162,6 @@ DifferTree& DifferTree::operator=(const DifferTree& tree)
 	if (tree.root)
 	{
 		*root = *tree.root;
-		current_node = root; //fix. no saving current node
 	}
 	return *this;
 }

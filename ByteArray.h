@@ -216,7 +216,7 @@ public:
     bool resetStrDeclCounter()
     {
         bool status = stubs.reset_const_str;
-        stubs.reset_const = false; 
+        stubs.reset_const_str = false; 
         return status; 
     }
     bool resetStrPrintCounter()
