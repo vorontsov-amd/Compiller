@@ -37,12 +37,16 @@ If you want to compile an assembler listing, then use nasm and link together wit
 
 ### Example of how the program works
 input file:
-![](https://sun9-46.userapi.com/impg/RR8UoVI7hY8tfus6Szk_asvR0q6PicY2xF1JIw/NUEubNJaQ_A.jpg?size=432x215&quality=96&sign=a5df428ece99359faefa2ea50b11c324&type=album)
+
+![alt-text](https://sun9-46.userapi.com/impg/RR8UoVI7hY8tfus6Szk_asvR0q6PicY2xF1JIw/NUEubNJaQ_A.jpg?size=432x215&quality=96&sign=a5df428ece99359faefa2ea50b11c324&type=album)
 compilling and launch:
+
 ![](https://sun9-51.userapi.com/impg/3NwNOkAVWdoT_ihTNaLrfLzY6JrcvF-gfDyYbg/7NXmFWO_aX4.jpg?size=1285x202&quality=96&sign=52e018d2918d21c74f5dc34f0db51190&type=album)
 graph dump:
+
 ![](https://sun9-28.userapi.com/impg/TzfzuZe4n7yj_AZbOKK1C0R1zegjVkU7trXblw/Oprr823S5Ws.jpg?size=718x772&quality=96&sign=0a8686572bd8ec146ddbe92e485c59a0&type=album)
 asseble listing dump:
+
 ![](https://sun9-76.userapi.com/impg/wPtPKIUM6Y2um5gcp6lxVY5x3PTxN5PgFBqpaQ/ljNb5u6jOhA.jpg?size=949x902&quality=96&sign=0b58553eacd308c3e5161ede68120f73&type=album)
 
 
