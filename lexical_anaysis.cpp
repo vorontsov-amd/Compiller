@@ -30,11 +30,6 @@ void WordAnalysis(char* word_ptr, List<node_t>& lexems)
         node_t number(NodeType::NUMBER, DataType::CONSTANT, atof(word_ptr)); 
         lexems.PushBack(number);
     }
-    else if (isWord(word_ptr))
-    {
-        node_t word(NodeType::WORD, DataType::UNKNOWN, word_ptr);
-        lexems.PushBack(word);
-    }
     else if (symbol* op = isOperator(word_ptr))
     {
         node_t oper(NodeType::OPERATOR, op->type, op->ch);
@@ -46,6 +41,11 @@ void WordAnalysis(char* word_ptr, List<node_t>& lexems)
         node_t bracket(NodeType::BRACKET, br->type, br->ch);
         lexems.PushBack(bracket);
         delete br;
+    }
+    else if (isWord(word_ptr))
+    {
+        node_t word(NodeType::WORD, DataType::UNKNOWN, word_ptr);
+        lexems.PushBack(word);
     }
     else 
     {        
@@ -155,8 +155,8 @@ symbol* isOperator(char* str)
 {
     CHECK_STR_PTR(str);
 
-    char operators[17][3] = {"+", "-", "=", "*", "<", ">", "/", "^", ">=", "<=", "!=", "==", ";", ",", "'", "&&", "||"};
-    int result =  SearchOperator(operators, 17, str);
+    char operators[19][5] = {"+", "-", "=", "*", "<", ">", "/", "^", ">=", "<=", "!=", "==", ";", ",", "'", "&&", "||", "love", "meow"};
+    int result = SearchOperator(operators, 19, str);
     if (result != -1)
     {
         symbol* op = new symbol;
@@ -196,9 +196,11 @@ symbol* isOperator(char* str)
             op->type = DataType::JNE;
             break;
         case 11:
+        case 17:
             op->type = DataType::JE;
             break;
         case 12:
+        case 18:
             op->type = DataType::END_OP;
             break;
         case 13:
@@ -214,7 +216,7 @@ symbol* isOperator(char* str)
             op->type = DataType::OR;
             break;
         }
-        op->ch = new char[3];
+        op->ch = new char[5];
         strcpy(op->ch, operators[result]);
         return op;
     }
