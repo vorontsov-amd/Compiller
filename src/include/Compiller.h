@@ -4,7 +4,6 @@
 #include "main.h"
 #include "ByteArray.h"
 #include "Variable.h"
-#include "exceptions.h"
 
 
 
@@ -30,7 +29,7 @@ void WritePreamble(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
 void PreambleRodata(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
 void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
 void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code);
-List<node_t>* CreateLstFuncNode(List<DifferTree> proga);
+List<node_t>* CreateLstFuncNode(List<DifferTree>& proga);
 void TreeTranslate(FILE* fasm, DifferTree& function, List<node_t>* functions,  ByteArray& machine_code);
 void VerifyDefFunc(node_t* function);
 void NumLocalVar(int& num_param, node_t* func);
@@ -49,7 +48,7 @@ void TranslateInit(FILE* fasm, int& num_const_str, List<node_t>* functions, List
 void TranslateMov(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
 void TranslateExp(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
 void WriteFuncEpilog(FILE* fasm, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
-void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree> proga, ByteArray& machine_code);
+void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree>& proga, ByteArray& machine_code);
 void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, ByteArray& machine_code);
 void AppendConst(FILE* fasm, node_t* node, ByteArray& machine_code);
 void AppendStr(FILE* fasm, node_t* node, ByteArray& machine_code);

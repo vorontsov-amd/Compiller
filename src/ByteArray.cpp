@@ -1,5 +1,5 @@
 #include "ByteArray.h"
-
+#include "stdlibPath.h"
 
 //-------------------------- Begin class ByteArray --------------------------
 
@@ -124,7 +124,7 @@ index_t ByteArray::AppendCmd(const cmd_t cmd, int size_cmd)
 
 void ByteArray::AppendStdFunctions()
 {
-    FILE* func = fopen("all_1", "rb");
+    FILE* func = fopen(STDLIB_PATH, "rb");
     const size_t FILE_SIZE = 0x5b3;
     const int DTOA_OFFSET = 0x4f;
     const int ATOD_OFFSET = 0x476;

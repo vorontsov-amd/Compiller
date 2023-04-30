@@ -1,16 +1,4 @@
-#include "Differentiator.h"
-#include "lexical_analysis.h"
-#include "Compiller.h"
-#include "Reading.h"
-#include "sys/stat.h"
-#include "stdlib.h"
-
-List<node_t> ListScan(const char* filename);
-size_t Filesize  (FILE *stream);
-void ClearBuf(char* buffer, size_t filesize, bool* flag);
-void ProgrammDump(List<DifferTree> tree);
-char* NameFunc(DifferTree tree);
-void VerifyMainArgument(int argc, const char* argv[]);
+#include "main.h"
 
 int main(int argc, char const *argv[])
 {    
@@ -20,7 +8,7 @@ int main(int argc, char const *argv[])
     const char* filename_text = argv[2];
 
     List<node_t> lst = ListScan(filename_text);
-	lst.GraphDump();
+	// lst.GraphDump();
 
 	List<DifferTree> tree = GetGrammar(lst);
     ProgrammDump(tree);
@@ -53,13 +41,10 @@ void VerifyMainArgument(int argc, const char* argv[])
 
 void ProgrammDump(List<DifferTree> tree)
 {
-    int size = tree.Size();
-
-    for (int i = 0; i < size; i++)
+    for (auto it = tree.begin(); it != tree.end(); ++it)
     {
-        const char* funcname = FrontFuncName(tree);
-        tree.ShowFront().GraphDump(funcname);
-        tree.PopFront();
+        const char* funcname = it->Root()->GetRight()->Name();
+        it->GraphDump(funcname);
     }
 }
 

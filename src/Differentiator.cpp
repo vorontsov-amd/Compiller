@@ -1,4 +1,4 @@
-﻿#include "Differenciator.h"
+﻿#include "Differentiator.h"
 #pragma warning(disable:4996)
 
 
@@ -87,6 +87,8 @@ int DifferTree::Print()
 
 void DifferTree::GraphDump(const char* graphname)
 {
+	system("mkdir TreeDump");
+
 	std::string name = std::string("TreeDump/") + graphname;
 	std::string command = name + ".dot";
 	

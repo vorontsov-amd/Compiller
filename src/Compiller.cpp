@@ -96,14 +96,11 @@ void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
     machine_code.Append(0U);
 }
 
-void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree> proga, ByteArray& machine_code)
+void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree>& proga, ByteArray& machine_code)
 {       
-    int size = proga.Size();
-    for (int i = 0; i < size; i++)
+    for (auto it = proga.begin(); it != proga.end(); ++it)
     {
-        DifferTree tree = proga.ShowFront();
-        SearchConst(fasm, mode, tree.Root(), machine_code);
-        proga.PopFront();
+        SearchConst(fasm, mode, it->Root(), machine_code);
     }
 }
 
@@ -207,14 +204,13 @@ void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine
     delete functions;
 }
 
-List<node_t>* CreateLstFuncNode(List<DifferTree> proga)
+List<node_t>* CreateLstFuncNode(List<DifferTree>& proga)
 {
     List<node_t>* lst = new List<node_t>;
 
-    for (int i = 0, size = proga.Size(); i < size; i++)
+    for (auto it = proga.begin(); it != proga.end(); ++it)
     {        
-        lst->PushBack(*proga.ShowFront().Root()->GetRight());
-        proga.PopFront();
+        lst->PushBack(*it->Root()->GetRight());
     }
 
     return lst;
@@ -381,12 +377,10 @@ uint32_t SizeStackFrame(node_t* func, List<variable>* variables)
 
 void CopyParametrsToStack(FILE* fasm, List<variable>* variables, ByteArray& machine_code)
 {
-    List<variable>* lst = new List<variable>(*variables);
-    for (int i = 0, size = lst->Size(); i < size; i++)
+    for (auto it = variables->begin(); it != variables->end(); ++it)
     {
-        variable var = lst->ShowFront();
-        uint32_t offset = var.Offset();
-        if (var.IsLink())
+        uint32_t offset = it->Offset();
+        if (it->IsLink())
         {
             fprintf(fasm, "\t\tmov\t\trax, [rbp + %ld]\n", offset + sizeof(double));
             fprintf(fasm, "\t\tmovsd\txmm0, qword [rax]\n");
@@ -402,7 +396,6 @@ void CopyParametrsToStack(FILE* fasm, List<variable>* variables, ByteArray& mach
             machine_code.AppendCmd(CMD::MOVSD_XMM0_VAR_L, CMD::MOVSD_XMM0_VAR_B, 5, offset + sizeof(double));
             machine_code.AppendCmd(CMD::MOVSD_VAR_XMM0_L, CMD::MOVSD_VAR_XMM0_B, 5, -offset);
         }
-        lst->PopFront();
     }
 }
 
@@ -506,24 +499,16 @@ void TranslateCallFunc(FILE* fasm, int& num_const_str, List<node_t>* functions, 
     int number_op = 0;
     if (node)
     {
-        try
-        {
-            node_t call_func_param = SearchCallFunc(call_func_name, functions).GetLeft();
-            while (node->dType() == DataType::COMMA && call_func_param.dType() == DataType::COMMA)
-            {                    
-                TransferParamToFunc(fasm, num_const_str, node->GetRight(), call_func_param.GetRight(), functions, lst, funcname,  machine_code);
-                node = node->GetLeft();
-                call_func_param = call_func_param.GetLeft();
-                number_op++;
-            }
-            TransferParamToFunc(fasm, num_const_str, node, call_func_param, functions, lst, funcname,  machine_code);
+        node_t call_func_param = SearchCallFunc(call_func_name, functions).GetLeft();
+        while (node->dType() == DataType::COMMA && call_func_param.dType() == DataType::COMMA)
+        {                    
+            TransferParamToFunc(fasm, num_const_str, node->GetRight(), call_func_param.GetRight(), functions, lst, funcname,  machine_code);
+            node = node->GetLeft();
+            call_func_param = call_func_param.GetLeft();
             number_op++;
         }
-        catch (bad_call& exc)
-        {
-            std::cout << exc.what();
-            exit(EXIT_FAILURE);
-        }
+        TransferParamToFunc(fasm, num_const_str, node, call_func_param, functions, lst, funcname,  machine_code);
+        number_op++;
     }
     
     fprintf(fasm, "\t\tcall\t%s\n", call_func_name);
@@ -534,19 +519,15 @@ void TranslateCallFunc(FILE* fasm, int& num_const_str, List<node_t>* functions, 
 
 node_t SearchCallFunc(const char* func_name, List<node_t>* functions)
 {
-    List<node_t>* functions_copy = new List<node_t> (*functions);
-    for (int i = 0, size = functions->Size(); i < size; i++)
+    for (auto it = functions->begin(); it != functions->end(); ++it)
     {
-        node_t target = functions_copy->ShowFront();
-        if (strcmp(target.Name(), func_name) == 0)
+        if (strcmp(it->Name(), func_name) == 0)
         {
-            delete functions_copy;
-            return target;
+            return *it;
         }
-        functions_copy->PopFront();
     }
-    delete functions_copy;
-    throw bad_call(func_name);
+    std::cerr << "Function " << func_name << " not found!";
+    std::exit(EXIT_FAILURE);
 }
 
 void TransferParamToFunc(FILE* fasm, int& num_const_str, node_t* param, node_t param_call_func, List<node_t>* functions, List<variable>* lst, const char* funcname,  ByteArray& machine_code)
@@ -709,19 +690,14 @@ void TranslateBaseScanf(FILE* fasm,  ByteArray& machine_code)
 }
 
 uint64_t OffsetVariable(List<variable>* param, node_t* var_ptr)
-{
-    List<variable>* lst = new List<variable>(*param);
-    
-    for (int i = 0, size = lst->Size(); i < size; i++)
+{    
+    for (auto it = param->begin(); it != param->end(); ++it)
     {
-        if (strcmp(lst->ShowFront().Name(), var_ptr->Name()) == 0)
+        if (strcmp(it->Name(), var_ptr->Name()) == 0)
         {
-            return lst->ShowFront().Offset();
+            return it->Offset();
         }
-        lst->PopFront();
     }
-
-    delete lst;
     return 0;
 }
 

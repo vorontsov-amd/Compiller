@@ -1,7 +1,6 @@
-src/CMakeFiles/Compiller.dir/Compiller.cpp.o: \
- /home/amadey/Projects/Compiller/src/Compiller.cpp \
- /usr/include/stdc-predef.h \
- /home/amadey/Projects/Compiller/src/./include/Compiller.h \
+src/CMakeFiles/Compiller.dir/main.cpp.o: \
+ /home/amadey/Projects/Compiller/src/main.cpp /usr/include/stdc-predef.h \
+ /home/amadey/Projects/Compiller/src/./include/main.h \
  /home/amadey/Projects/Compiller/src/./include/Differentiator.h \
  /home/amadey/Projects/Compiller/src/./include/data_t.h \
  /usr/include/c++/12/string \
@@ -181,14 +180,15 @@ src/CMakeFiles/Compiller.dir/Compiller.cpp.o: \
  /usr/include/c++/12/tr1/poly_hermite.tcc \
  /usr/include/c++/12/tr1/poly_laguerre.tcc \
  /usr/include/c++/12/tr1/riemann_zeta.tcc \
+ /home/amadey/Projects/Compiller/src/./include/lexical_analysis.h \
  /home/amadey/Projects/Compiller/src/./include/List.h \
  /usr/include/c++/12/cassert /usr/include/assert.h \
  /usr/include/c++/12/list /usr/include/c++/12/bits/stl_list.h \
  /usr/include/c++/12/bits/allocated_ptr.h \
  /usr/include/c++/12/ext/aligned_buffer.h \
  /usr/include/c++/12/bits/list.tcc \
+ /home/amadey/Projects/Compiller/src/./include/Compiller.h \
  /home/amadey/Projects/Compiller/src/./include/main.h \
- /home/amadey/Projects/Compiller/src/./include/lexical_analysis.h \
  /home/amadey/Projects/Compiller/src/./include/Reading.h \
  /usr/include/x86_64-linux-gnu/sys/stat.h \
  /usr/include/x86_64-linux-gnu/bits/stat.h \

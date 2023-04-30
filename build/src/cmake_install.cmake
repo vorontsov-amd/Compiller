@@ -49,7 +49,7 @@ if(CMAKE_INSTALL_COMPONENT STREQUAL "Compiller" OR NOT CMAKE_INSTALL_COMPONENT)
          FILE "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/Compiller"
          RPATH "")
   endif()
-  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/home/amadey/Projects/Compiller/build/src/Compiller")
+  file(INSTALL DESTINATION "${CMAKE_INSTALL_PREFIX}/bin" TYPE EXECUTABLE FILES "/home/amadey/Projects/Compiller/build/bin/Compiller")
   if(EXISTS "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/Compiller" AND
      NOT IS_SYMLINK "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/bin/Compiller")
     if(CMAKE_INSTALL_DO_STRIP)

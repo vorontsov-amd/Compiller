@@ -1,7 +1,6 @@
-src/CMakeFiles/Compiller.dir/Compiller.cpp.o: \
- /home/amadey/Projects/Compiller/src/Compiller.cpp \
+src/CMakeFiles/Compiller.dir/Differentiator.cpp.o: \
+ /home/amadey/Projects/Compiller/src/Differentiator.cpp \
  /usr/include/stdc-predef.h \
- /home/amadey/Projects/Compiller/src/./include/Compiller.h \
  /home/amadey/Projects/Compiller/src/./include/Differentiator.h \
  /home/amadey/Projects/Compiller/src/./include/data_t.h \
  /usr/include/c++/12/string \
@@ -180,41 +179,4 @@ src/CMakeFiles/Compiller.dir/Compiller.cpp.o: \
  /usr/include/c++/12/tr1/modified_bessel_func.tcc \
  /usr/include/c++/12/tr1/poly_hermite.tcc \
  /usr/include/c++/12/tr1/poly_laguerre.tcc \
- /usr/include/c++/12/tr1/riemann_zeta.tcc \
- /home/amadey/Projects/Compiller/src/./include/List.h \
- /usr/include/c++/12/cassert /usr/include/assert.h \
- /usr/include/c++/12/list /usr/include/c++/12/bits/stl_list.h \
- /usr/include/c++/12/bits/allocated_ptr.h \
- /usr/include/c++/12/ext/aligned_buffer.h \
- /usr/include/c++/12/bits/list.tcc \
- /home/amadey/Projects/Compiller/src/./include/main.h \
- /home/amadey/Projects/Compiller/src/./include/lexical_analysis.h \
- /home/amadey/Projects/Compiller/src/./include/Reading.h \
- /usr/include/x86_64-linux-gnu/sys/stat.h \
- /usr/include/x86_64-linux-gnu/bits/stat.h \
- /usr/include/x86_64-linux-gnu/bits/struct_stat.h \
- /usr/include/x86_64-linux-gnu/bits/statx.h /usr/include/linux/stat.h \
- /usr/include/linux/types.h /usr/include/x86_64-linux-gnu/asm/types.h \
- /usr/include/asm-generic/types.h /usr/include/asm-generic/int-ll64.h \
- /usr/include/x86_64-linux-gnu/asm/bitsperlong.h \
- /usr/include/asm-generic/bitsperlong.h /usr/include/linux/posix_types.h \
- /usr/include/linux/stddef.h \
- /usr/include/x86_64-linux-gnu/asm/posix_types.h \
- /usr/include/x86_64-linux-gnu/asm/posix_types_64.h \
- /usr/include/asm-generic/posix_types.h \
- /usr/include/x86_64-linux-gnu/bits/statx-generic.h \
- /usr/include/x86_64-linux-gnu/bits/types/struct_statx_timestamp.h \
- /usr/include/x86_64-linux-gnu/bits/types/struct_statx.h \
- /usr/include/c++/12/stdlib.h \
- /home/amadey/Projects/Compiller/src/./include/ByteArray.h \
- /usr/include/elf.h /usr/include/x86_64-linux-gnu/bits/auxv.h \
- /usr/include/c++/12/climits \
- /usr/lib/gcc/x86_64-linux-gnu/12/include/limits.h \
- /usr/lib/gcc/x86_64-linux-gnu/12/include/syslimits.h \
- /usr/include/limits.h /usr/include/x86_64-linux-gnu/bits/posix1_lim.h \
- /usr/include/x86_64-linux-gnu/bits/local_lim.h \
- /usr/include/linux/limits.h \
- /usr/include/x86_64-linux-gnu/bits/posix2_lim.h \
- /usr/include/x86_64-linux-gnu/bits/xopen_lim.h \
- /usr/include/x86_64-linux-gnu/bits/uio_lim.h \
- /home/amadey/Projects/Compiller/src/./include/Variable.h
+ /usr/include/c++/12/tr1/riemann_zeta.tcc

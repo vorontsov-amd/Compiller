@@ -108,10 +108,6 @@ data_t::data_t()
 	strcpy(value.string_ptr, "nothing");
 }
 
-data_t::~data_t()
-{
-}
-
 data_t& data_t::operator=(const data_t& data)
 {
 	type = data.type;
@@ -269,10 +265,6 @@ node_t::node_t(node_t* node)
 	{
 		right = nullptr;
 	}
-}
-
-node_t::~node_t()
-{
 }
 
 node_t& node_t::operator=(const node_t& node)

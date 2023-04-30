@@ -21,13 +21,6 @@ variable::variable(node_t* _var, bool _is_link, uint32_t _offset)
 }
 
 
-
-variable::~variable()
-{
-    
-}
-
-
 uint32_t variable::Offset() const
 {
     return offset;

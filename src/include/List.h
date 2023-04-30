@@ -37,9 +37,9 @@ public:
 	int PushFront(const T& value);
 	int Insert(int index, const T& value);
 	int Delete(int index);
-	const T& Show(int index);
-	const T& ShowBack();
-	const T& ShowFront();
+	T Show(int index);
+	T ShowBack();
+	T ShowFront();
 
 	int PopFront();
 	int PopBack();
@@ -49,22 +49,33 @@ public:
 	
 	int TranslateIndex(int logic_index);
 
-	size_t Size()
+	size_t Size() const
 	{
 		return size;
 	}
 
 	class Iterator {
 		int index;
-		List* lst;
+		List* list;
+	
+	public:
+		Iterator(int idx, List* lst): index{idx}, list{lst} {} 
 
 		Iterator operator++() {
-			index = lst->Next[index];
+			index = list->Next[index];
 			return *this;
 		}
 
-		const T& operator*() {
-			return lst->Data[index];
+		T operator*() {
+			return list->Data[index];
+		}
+
+		bool operator!=(Iterator rhs) {
+			return index != rhs.index;
+		} 
+
+		T* operator->() {
+			return &list->Data[index];
 		}
 	};
 
@@ -268,23 +279,25 @@ template <typename T> int		 List<T>::PopFront				()
 	return Delete(Next[0]);
 }
 
-template <typename T> const T&			 List<T>::Show					(int index)
+template <typename T> T			 List<T>::Show					(int index)
 {
 	return Data[index];
 }
 
-template <typename T> const T&			 List<T>::ShowBack					()
+template <typename T> T			 List<T>::ShowBack					()
 {
 	return Data[Prev[0]];
 }
 
-template <typename T> const T&			 List<T>::ShowFront					()
+template <typename T> T			 List<T>::ShowFront					()
 {
 	return Data[Next[0]];
 }
 
 template <typename T> void		 List<T>::GraphDump			(const char * const graphname)
 {				
+	system("mkdir ListDump");
+
 	char* name = (char*)calloc(strlen(graphname) + 10, sizeof(char));
 	strcpy(name, "ListDump/");
 	strcat(name, graphname);

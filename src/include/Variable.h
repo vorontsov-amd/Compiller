@@ -12,7 +12,6 @@ private:
 public:
     variable();
     variable(node_t*, bool, uint32_t);
-    ~variable();
 
     uint32_t Offset() const;
     const char* Name() const;

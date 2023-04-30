@@ -93,7 +93,6 @@ class data_t
 	friend std::ostream& operator<< (std::ostream& stream, const data_t& data);
 public:
 	data_t();
-	~data_t();
 	data_t(data_t& data);
 	data_t(DataType::dataType _type, double _value);
 	data_t(DataType::dataType _type, const char* _value);
@@ -171,9 +170,6 @@ public:
 	node_t(const NodeType::nodeType N_type, const DataType::dataType D_type, const char* str, node_t* _left, node_t* _right);
 	node_t(const NodeType::nodeType N_type, const DataType::dataType D_type, node_t* _left, node_t* _right);
 
-
-
-	~node_t();
 
 	node_t& operator=(const node_t& node);
 	node_t& operator-(int number);

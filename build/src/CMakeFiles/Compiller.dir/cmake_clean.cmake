@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "../bin/Compiller"
+  "../bin/Compiller.pdb"
   "CMakeFiles/Compiller.dir/ByteArray.cpp.o"
   "CMakeFiles/Compiller.dir/ByteArray.cpp.o.d"
   "CMakeFiles/Compiller.dir/Compiller.cpp.o"
@@ -15,8 +17,6 @@ file(REMOVE_RECURSE
   "CMakeFiles/Compiller.dir/lexical_analysis.cpp.o.d"
   "CMakeFiles/Compiller.dir/main.cpp.o"
   "CMakeFiles/Compiller.dir/main.cpp.o.d"
-  "Compiller"
-  "Compiller.pdb"
 )
 
 # Per-language clean rules from dependency scanning.
