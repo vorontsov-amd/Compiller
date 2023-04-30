@@ -1,0 +1,2 @@
+#pragma once
+#cmakedefine STDLIB_PATH "@STDLIB_PATH@"
