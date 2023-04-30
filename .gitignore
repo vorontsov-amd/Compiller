@@ -1,11 +1,8 @@
 *.o
 *.dot
-main
 .vscode
-out
-func
-*.txt
 *.bak
 *.exe
 ListDump
 TreeDump
+build

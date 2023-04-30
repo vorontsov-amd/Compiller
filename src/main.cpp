@@ -14,6 +14,9 @@ int main(int argc, char const *argv[])
     ProgrammDump(tree);
 
     TranslateToAsm(tree, filename_code);
+
+    auto cmd = std::string("chmod +x ") + argv[1];
+    system(cmd.c_str());
 }
 
 void VerifyMainArgument(int argc, const char* argv[])
