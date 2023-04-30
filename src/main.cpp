@@ -1,6 +1,6 @@
-#include "Differenciator.h"
+#include "Differentiator.h"
 #include "lexical_analysis.h"
-#include "Compiliter.h"
+#include "Compiller.h"
 #include "Reading.h"
 #include "sys/stat.h"
 #include "stdlib.h"

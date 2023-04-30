@@ -1,5 +1,5 @@
 #pragma once
-#include "Differenciator.h"
+#include "Differentiator.h"
 #include "List.h"
 
 #define CHECK_STR_PTR(STR)                                                                                  \

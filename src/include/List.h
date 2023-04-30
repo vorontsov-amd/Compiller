@@ -5,10 +5,9 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstring>
+#include <list>
 
 #define LOX printf("%d\n", __LINE__);
-
-static const int START_LIST_CAPACITY = 10;
 
 #define ROUND 0
 #define LINEAR 1
@@ -19,12 +18,17 @@ static const int START_LIST_CAPACITY = 10;
 
 template <typename T> class List
 {
+	friend class Iterator;
 public:
-	List(size_t _capacity = START_LIST_CAPACITY);
+	explicit List(size_t _capacity = 10);
 	List(const List<T>& lst);
 	~List();
-
+	
 	List<T>& operator=(const List<T>& lst);
+
+	// I wrote this project when I didn't know what &&
+	// List<T>& operator=(List<T>&& lst) = delete; 
+	// List(List<T>&& lst) = delete;
 
 	void Dump();
 	void GraphDump(const char * const graphname = "graph");
@@ -33,21 +37,43 @@ public:
 	int PushFront(const T& value);
 	int Insert(int index, const T& value);
 	int Delete(int index);
-	T Show(int index);
-	T ShowBack();
-	T ShowFront();
+	const T& Show(int index);
+	const T& ShowBack();
+	const T& ShowFront();
 
 	int PopFront();
 	int PopBack();
 
 	void Sorting();
-	inline bool ListIsSorted();
+	bool ListIsSorted();
 	
 	int TranslateIndex(int logic_index);
 
 	size_t Size()
 	{
-		return this->size;
+		return size;
+	}
+
+	class Iterator {
+		int index;
+		List* lst;
+
+		Iterator operator++() {
+			index = lst->Next[index];
+			return *this;
+		}
+
+		const T& operator*() {
+			return lst->Data[index];
+		}
+	};
+
+	Iterator begin() {
+		return {Next[0], this}; 
+	}
+
+	Iterator end() {
+		return {0, this};
 	}
 
 private:
@@ -59,8 +85,8 @@ private:
 	size_t size;
 	size_t capacity;
 	void ListResize();
-	inline int CheckValidInsertIndex(int index);
-	inline int CheckValidDeleteIndex(int index);
+	int CheckValidInsertIndex(int index);
+	int CheckValidDeleteIndex(int index);
 	void InitListArrays(int first_index);
 };
 
@@ -166,7 +192,7 @@ template <typename T> void		 List<T>::Dump					()
 template <typename T> int		 List<T>::Insert				(int index, const T& value)
 {		
 	bool status = CheckValidInsertIndex(index);
-	//if (!status) return -1;
+	if (!status) throw std::invalid_argument("invalid index");
 	
 	if (size == capacity - 2 or index >= capacity - 1)
 		ListResize();
@@ -213,7 +239,7 @@ template <typename T> int		 List<T>::PushFront			(const T& value)
 template <typename T> int		 List<T>::Delete				(int index)
 {
 	bool status = CheckValidDeleteIndex(index);
-	//if (!status) return -1;
+	if (!status) throw std::invalid_argument("invalid index");
 	
 	int prev = Prev[index];
 
@@ -242,17 +268,17 @@ template <typename T> int		 List<T>::PopFront				()
 	return Delete(Next[0]);
 }
 
-template <typename T> T			 List<T>::Show					(int index)
+template <typename T> const T&			 List<T>::Show					(int index)
 {
 	return Data[index];
 }
 
-template <typename T> T			 List<T>::ShowBack					()
+template <typename T> const T&			 List<T>::ShowBack					()
 {
 	return Data[Prev[0]];
 }
 
-template <typename T> T			 List<T>::ShowFront					()
+template <typename T> const T&			 List<T>::ShowFront					()
 {
 	return Data[Next[0]];
 }
@@ -323,7 +349,7 @@ template <typename T> void		 List<T>::GraphDump			(const char * const graphname)
 
 template <typename T> void		 List<T>::Sorting				()
 {
-	T* SortList = (T*)calloc(capacity, sizeof(T));
+	T* SortList = new T [capacity]{};
 	int SortIndex = 1, DataIndex = Next[0];
 	for (SortIndex, DataIndex; DataIndex != Next[Prev[0]]; SortIndex++, DataIndex = Next[DataIndex])
 	{
@@ -334,7 +360,7 @@ template <typename T> void		 List<T>::Sorting				()
 
 	InitListArrays(SortIndex);
 
-	std::free(Data);
+	delete[] Data;
 	Data = SortList;
 
 	list_is_sorted = true;
@@ -381,12 +407,12 @@ template <typename T> void		 List<T>::ListResize			()
 
 }
 
-template <typename T> inline int List<T>::CheckValidDeleteIndex(int index)
+template <typename T> int List<T>::CheckValidDeleteIndex(int index)
 {
 	return index != 0 and Prev[index] != -1;
 }	
 
-template <typename T> inline int List<T>::CheckValidInsertIndex(int index)
+template <typename T> int List<T>::CheckValidInsertIndex(int index)
 {
 	return Prev[index] != -1;
 }
@@ -404,7 +430,7 @@ template <typename T> void		 List<T>::InitListArrays		(int first_index)
 	}
 }
 
-template<typename T> inline bool List<T>::ListIsSorted			()
+template<typename T> bool List<T>::ListIsSorted			()
 {
 	return list_is_sorted;
 }

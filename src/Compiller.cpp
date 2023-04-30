@@ -1,4 +1,4 @@
-#include "Compiliter.h"
+#include "Compiller.h"
 
 
 void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
