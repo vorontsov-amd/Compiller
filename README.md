@@ -37,15 +37,24 @@ cd Compiller
 ```
 After that, compile the project using CMake
 
+```
+mkdir build
+cd build
+cmake ..
+cmake --build .
+```
+
+As a result, you will get a file called `Compiller` in the `"bin"` folder 
+
 ## Compiling 
 If you want to recompile the compiler for my language, you can do it using Makefile.
 In order to compile the program in my language, write to the console
 ```cmd
-> ./compl output_file_name input_file_name
+> ./Compiller output_file_name input_file_name
 ```
-If you want to compile an assembler listing, then use nasm and link together with the std.o file.
+If you want to compile an assembler listing, then use nasm and link together with the stdlib.o file.
 
-### Example of how the program works
+## Example of how the program works
 input file:
 
 ![alt-text](https://sun9-46.userapi.com/impg/RR8UoVI7hY8tfus6Szk_asvR0q6PicY2xF1JIw/NUEubNJaQ_A.jpg?size=432x215&quality=96&sign=a5df428ece99359faefa2ea50b11c324&type=album)
@@ -60,5 +69,7 @@ graph dump:
 asseble listing dump:
 
 ![](https://sun9-76.userapi.com/impg/wPtPKIUM6Y2um5gcp6lxVY5x3PTxN5PgFBqpaQ/ljNb5u6jOhA.jpg?size=949x902&quality=96&sign=0b58553eacd308c3e5161ede68120f73&type=album)
+
+Examples of more complex programs can be found in the `examples` folder
 
 
