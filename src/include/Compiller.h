@@ -4,7 +4,8 @@
 #include "main.h"
 #include "ByteArray.h"
 #include "Variable.h"
-
+#include "IRGenerator.hpp"
+#include <vector>
 
 
 struct ThreeIfStr
@@ -30,24 +31,30 @@ void PreambleRodata(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code
 void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
 void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code);
 List<node_t>* CreateLstFuncNode(List<DifferTree>& proga);
-void TreeTranslate(FILE* fasm, DifferTree& function, List<node_t>* functions,  ByteArray& machine_code);
+void TreeTranslate(DifferTree& function, List<node_t>* functions, IRGenerator& gen);
 void VerifyDefFunc(node_t* function);
 void NumLocalVar(int& num_param, node_t* func);
-List<variable>* WriteFuncProlog(FILE* fasm, node_t* function,  ByteArray& machine_code);
+
+llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen);
+void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen);
+std::vector<variable> FillListVariables(node_t* node);
+
+
+llvm::Value* TranslateVar(node_t* node, IRGenerator& gen);
+
 void VerifyFunc(node_t* node);
-List<variable>* FillListVariables(node_t* node);
+
 int NumParam(node_t* node);
 uint32_t SizeStackFrame(node_t* func, List<variable>* variables);
 void CopyParametrsToStack(FILE* fasm, List<variable>* variables, ByteArray& machine_code);
-void TranslateOpSequence(FILE* fasm, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset,  ByteArray& machine_code);
-void TranslateOp(FILE* fasm, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset,  ByteArray& machine_code);
+void TranslateOpSequence(IRGenerator& gen, List<node_t>* functions, node_t* node);
+void TranslateOp(IRGenerator& gen, List<node_t>* functions, node_t* node);
 void TranslateCallFunc(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname,  ByteArray& machine_code);
 node_t SearchCallFunc(const char* func_name, List<node_t>* functions);
 void TransferParamToFunc(FILE* fasm, int& num_const_str, node_t* param, node_t param_call_func, List<node_t>* functions, List<variable>* lst, const char* funcname,  ByteArray& machine_code);
 void TranslateInit(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset,  ByteArray& machine_code);
 void TranslateMov(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
-void TranslateExp(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
-void WriteFuncEpilog(FILE* fasm, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
+llvm::Value* TranslateExp(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node);
 void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree>& proga, ByteArray& machine_code);
 void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, ByteArray& machine_code);
 void AppendConst(FILE* fasm, node_t* node, ByteArray& machine_code);
@@ -70,15 +77,14 @@ void TranslateScanfMoreParametrs(FILE* fasm, List<variable>* lst, node_t* node, 
 void TranslateBaseScanf(FILE* fasm,  ByteArray& machine_code);
 void ScanOne(FILE* fasm, uint64_t offset,  ByteArray& machine_code);
 void TranslateCallSqtr(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname,  ByteArray& machine_code);
-void TranslateRet(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_codee);
+llvm::Value* TranslateRet(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node);
 uint64_t OffsetVariable(List<variable>* lst, node_t* var_ptr);
 void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, ByteArray& machine_code);
 void TranslatePow(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
 void TranslateMul(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
-void TranslateAdd(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
+llvm::Value* TranslateAdd(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node);
 void TranslateDiv(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
 void TranslateSub(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
-inline void TranslateVar(FILE* fasm, List<variable>* param, node_t* node, ByteArray& machine_code);
 void TranslateCallLog(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname,  ByteArray& machine_code);
 void TranslateCallCos(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);
 void TranslateCallSin(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code);

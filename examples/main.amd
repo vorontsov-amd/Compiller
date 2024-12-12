@@ -1,5 +1,4 @@
-
-define func()
+define main()
 {
     var x = 0;
     print('Enter', 'number', 'test', 'programm');

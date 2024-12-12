@@ -1,9 +1,11 @@
 #include "main.h"
+#include "termcolor/termcolor.hpp"
+#include <iostream>
 
 int main(int argc, char const *argv[])
 {    
     VerifyMainArgument(argc, argv);
-    
+
     const char* filename_code = argv[1];
     const char* filename_text = argv[2];
 
@@ -11,7 +13,7 @@ int main(int argc, char const *argv[])
 	// lst.GraphDump();
 
 	List<DifferTree> tree = GetGrammar(lst);
-    ProgrammDump(tree);
+    // ProgrammDump(tree);
 
     TranslateToAsm(tree, filename_code);
 

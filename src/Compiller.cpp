@@ -1,5 +1,14 @@
 #include "Compiller.h"
-
+#include "IRGenerator.hpp"
+#include "termcolor/termcolor.hpp"
+#include <iostream>
+#include <llvm/IR/IRBuilder.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/Function.h>
+#include <llvm/IR/Type.h>
+#include <llvm/IR/Value.h>
+#include <llvm/IR/BasicBlock.h>
 
 void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
 {
@@ -13,19 +22,19 @@ void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
     WritePreamble(fasm, proga, machine_code);
     TranslateProcessing(fasm, proga,  machine_code);
 
-    rewind(fasm);
-    machine_code.Reset();
+    // rewind(fasm);
+    // machine_code.Reset();
 
-    machine_code.AppendElfHeader();
-    WritePreamble(fasm, proga, machine_code);
-    TranslateProcessing(fasm, proga,  machine_code);
+    // machine_code.AppendElfHeader();
+    // WritePreamble(fasm, proga, machine_code);
+    // TranslateProcessing(fasm, proga,  machine_code);
 
-    FILE* out = fopen(out_name, "wb");    
-    assert(out);
-    fwrite(machine_code.ByteCode(), 1, machine_code.Size(), out);
-    fclose(fasm);
-    fclose(out);
-    delete[] programm_name;
+    // FILE* out = fopen(out_name, "wb");    
+    // assert(out);
+    // fwrite(machine_code.ByteCode(), 1, machine_code.Size(), out);
+    // fclose(fasm);
+    // fclose(out);
+    // delete[] programm_name;
 }
 
 const char* ProgrammName(List<DifferTree>& proga)
@@ -175,31 +184,18 @@ void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine
 {
     List<node_t>* functions = CreateLstFuncNode(proga);
     
-    uint64_t begin_text = machine_code.Size();
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.textStubs().p_offset = begin_text;
-        machine_code.textStubs().p_vaddp = machine_code.e_point() + begin_text;
-    }
-    
-    WriteProgrammProlog(fasm, proga, machine_code);
+
+    IRGenerator generator;
 
     int size = proga.Size();
     for (int i = 0; i < size; i++)
     {
         DifferTree function = proga.ShowFront();
-        fputc('\n', fasm);
-        TreeTranslate(fasm, function, functions,  machine_code);
+        TreeTranslate(function, functions, generator);
         proga.PopFront();
     }
 
-    machine_code.AppendStdFunctions();
-
-    uint64_t end_text = machine_code.Size();
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.textStubs().p_size = end_text - begin_text;
-    }
+    generator.dump();
 
     delete functions;
 }
@@ -245,57 +241,87 @@ void VerifyDefFunc(node_t* function)
     }
 }
 
-void TreeTranslate(FILE* fasm, DifferTree& function, List<node_t>* functions,  ByteArray& machine_code)
+void TreeTranslate(DifferTree& function, List<node_t>* functions, IRGenerator& gen)
 {
     node_t* func = function.Root();
     VerifyDefFunc(func);
 
     func = func->GetRight();
+    auto* llvm_function = WriteFuncProlog(func, gen);
+    gen.current_function = llvm_function;
 
-    List<variable>* param = WriteFuncProlog(fasm, func,  machine_code);
-    int offset = param->Size() * sizeof(double);
+    TranslateOpSequence(gen, functions, func->GetRight());
 
-    const char* funcname = func->Name();
-
-    TranslateOpSequence(fasm, functions, param, func->GetRight(), funcname, offset,  machine_code);
-
-    node_t null(NodeType::NUMBER, DataType::CONSTANT, 0.0);
-    WriteFuncEpilog(fasm, param, &null, funcname,  machine_code);
-
-    delete param;
+    WriteFuncEpilog(llvm_function, gen);
 }
 
-List<variable>* WriteFuncProlog(FILE* fasm, node_t* func,  ByteArray& machine_code)
-{    
-    const char* mark = func->Name();
-    
-    fprintf(fasm, "%s:\n", mark);
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.AddLabel(mark);
+llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen) {
+    using namespace llvm;
+
+    auto funcName = func->Name();
+    auto variables = FillListVariables(func);
+    std::vector<Type*> argTypes;
+    for (auto variable : variables) {
+        if (variable.IsLink()) {
+            argTypes.push_back(Type::getDoubleTy(gen.context)->getPointerTo());
+        } else {
+            argTypes.push_back(Type::getDoubleTy(gen.context));
+        }
     }
+
+    auto* funcType = FunctionType::get(Type::getVoidTy(gen.context), argTypes, false);
+    auto* llvmFunc = Function::Create(funcType, Function::ExternalLinkage, funcName, &gen.module);
+
+    unsigned idx = 0;
+    for (auto&& arg : llvmFunc->args()) {
+        arg.setName(variables[idx].Name());
+        ++idx;
+    }
+
+    auto* entryBlock = BasicBlock::Create(gen.context, "entry", llvmFunc);
     
-    List<variable>* variables = FillListVariables(func);
+    gen.builder.SetInsertPoint(entryBlock);
 
-    fputs("\t\tpush\trbp\n", fasm);
-    fputs("\t\tmov\t\trbp, rsp\n", fasm);
-    machine_code.AppendCmd(CMD::PUSH_RBP, 1);
-    machine_code.AppendCmd(CMD::MOV_RBP_RSP, 3);
+    // Copy arguments to stack
+    idx = 0;
+    for (auto&& arg : llvmFunc->args()) {
+        auto localVarName = arg.getName().str() + "_local";
+        auto* localVar = gen.builder.CreateAlloca(arg.getType(), nullptr, localVarName);
+        if (arg.getType()->isPointerTy()) {
+            auto* loadedValue = gen.builder.CreateLoad(Type::getDoubleTy(gen.context), &arg, arg.getName() + "_loaded");
+            gen.builder.CreateStore(loadedValue, localVar);
+        } else {
+            gen.builder.CreateStore(&arg, localVar);
+        }
+        gen.local_vars[localVarName] = localVar;
+    }
 
-    uint32_t size_stk_frame = SizeStackFrame(func, variables);
-
-    fprintf(fasm, "\t\tsub\t\trsp, %d\n", size_stk_frame);
-    machine_code.AppendCmd(CMD::SUB_RSP_NUM_L, CMD::SUB_RSP_NUM_B, 4, size_stk_frame);
-
-    CopyParametrsToStack(fasm, variables, machine_code);
-
-    return variables;
+    return llvmFunc;
 }
 
-List<variable>* FillListVariables(node_t* node)
+void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen) {
+    using namespace llvm;
+    
+    // auto* returnBlock = BasicBlock::Create(gen.context, "return", llvmFunc);
+    // gen.builder.SetInsertPoint(returnBlock);
+
+    // Copy updated local variables back to their original locations
+    unsigned idx = 0;
+    for (auto&& arg : llvmFunc->args()) {
+        if (arg.getType()->isPointerTy()) {
+            auto localVarName = arg.getName().str() + "_local";
+            auto* updatedValue = gen.local_vars[localVarName];
+            gen.builder.CreateStore(updatedValue, &arg);
+        }
+    }
+
+    gen.builder.CreateRetVoid();
+}
+
+std::vector<variable> FillListVariables(node_t* node)
 {
     VerifyFunc(node);
-    List<variable>* variables = new List<variable>;
+    std::vector<variable> variables;
 
     if (node->GetLeft())
     {
@@ -308,12 +334,12 @@ List<variable>* FillListVariables(node_t* node)
             {
                 var_ptr = var_ptr->GetRight();
                 variable var(var_ptr, false, offset);
-                variables->PushBack(var);
+                variables.push_back(var);
             }
             else
             {
                 variable var(var_ptr, true, offset);
-                variables->PushBack(var);
+                variables.push_back(var);
             }
             offset -= sizeof(double);
             node = node->GetLeft();
@@ -322,12 +348,12 @@ List<variable>* FillListVariables(node_t* node)
         {
             node = node->GetRight();
             variable var(node, false, offset);
-            variables->PushBack(var);
+            variables.push_back(var);
         }
         else
         {
             variable var(node, true, offset);
-            variables->PushBack(var);
+            variables.push_back(var);
         }
     }
 
@@ -375,116 +401,56 @@ uint32_t SizeStackFrame(node_t* func, List<variable>* variables)
     return num_variables * sizeof(double);
 }
 
-void CopyParametrsToStack(FILE* fasm, List<variable>* variables, ByteArray& machine_code)
-{
-    for (auto it = variables->begin(); it != variables->end(); ++it)
-    {
-        uint32_t offset = it->Offset();
-        if (it->IsLink())
-        {
-            fprintf(fasm, "\t\tmov\t\trax, [rbp + %ld]\n", offset + sizeof(double));
-            fprintf(fasm, "\t\tmovsd\txmm0, qword [rax]\n");
-            fprintf(fasm, "\t\tmovsd\tqword [rbp - %d], xmm0\n", offset);
-            machine_code.AppendCmd(CMD::MOV_RAX_VAR_L, CMD::MOV_RAX_VAR_B, 4, offset + sizeof(double));
-            machine_code.AppendCmd(CMD::MOVSD_XMM0_VAR, 4);
-            machine_code.AppendCmd(CMD::MOVSD_VAR_XMM0_L, CMD::MOVSD_VAR_XMM0_B, 5, -offset);
-        }
-        else
-        {
-            fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp + %ld]\n", offset + sizeof(double));
-            fprintf(fasm, "\t\tmovsd\tqword [rbp - %d], xmm0\n", offset);
-            machine_code.AppendCmd(CMD::MOVSD_XMM0_VAR_L, CMD::MOVSD_XMM0_VAR_B, 5, offset + sizeof(double));
-            machine_code.AppendCmd(CMD::MOVSD_VAR_XMM0_L, CMD::MOVSD_VAR_XMM0_B, 5, -offset);
-        }
-    }
-}
 
-void WriteFuncEpilog(FILE* fasm, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
-{
-    std::string ret_lbl = std::string(".ret_") + funcname;
-
-    fprintf(fasm, ".ret_%s:\n", funcname);
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.AddLabel(ret_lbl);
-    }
-    
-    for (int i = 0, size = param->Size(); i < size; i++)
-    {
-        variable var = param->ShowFront();
-        if (var.IsLink())
-        {
-            uint32_t offset = var.Offset();
-            fprintf(fasm, "\t\tmov\t\trax, [rbp + %ld]\n", offset + sizeof(double));
-            fprintf(fasm, "\t\tmovsd\txmm0, qword [rbp - %d]\n", offset);
-            fprintf(fasm, "\t\tmovsd\tqword [rax], xmm0\n");
-            machine_code.AppendCmd(CMD::MOV_RAX_VAR_L, CMD::MOV_RAX_VAR_B, 4, offset + sizeof(double));
-            machine_code.AppendCmd(CMD::MOVSD_XMM0_VAR_L, CMD::MOVSD_XMM0_VAR_B, 5, -offset);
-            machine_code.AppendCmd(CMD::MOVSD_VAR_XMM0, 4);
-        }
-        param->PopFront();
-    }
-
-    fputs("\t\tleave\n", fasm);
-    fputs("\t\tret\n", fasm);
-    machine_code.AppendCmd(CMD::LEAVE, 1);
-    machine_code.AppendCmd(CMD::RET, 1);
-}
-
-void TranslateOpSequence(FILE* fasm, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset,  ByteArray& machine_code)
+void TranslateOpSequence(IRGenerator& gen, List<node_t>* functions, node_t* node)
 {
     while (node && (node->dType() == DataType::END_OP))
     {
-        TranslateOp(fasm, functions, param, node->GetLeft(), funcname, offset,  machine_code);
+        TranslateOp(gen, functions, node->GetLeft());
         node = node->GetRight();
     }
 }
 
-void TranslateOp(FILE* fasm, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset,  ByteArray& machine_code)
+void TranslateOp(IRGenerator& gen, List<node_t>* functions, node_t* node)
 {
-    static int num_const_str = 0;
-    if (machine_code.resetStrPrintCounter())
-    {
-        num_const_str = 0;
-    } 
-    
+    static int num_const_str = 0;    
     switch (node->dType())
     {
-    case DataType::FUNC:
-        TranslateCallFunc(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::PRINTF:
-        TranslateCallPrintf(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::SCANF:
-        TranslateCallScanf(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::SQRT:
-        TranslateCallSqtr(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::LOG:
-        TranslateCallLog(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::SIN:
-        TranslateCallSin(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::COS:
-        TranslateCallCos(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::INITIALIZATE:
-        TranslateInit(fasm, num_const_str, functions, param, node, funcname, offset,  machine_code);
-        break;
-    case DataType::MOV:
-        TranslateMov(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::IF:
-        TranslateIf(fasm, num_const_str, functions, param, node, funcname, offset,  machine_code);
-        break;
-    case DataType::WHILE:
-        TranslateWhile(fasm, num_const_str, functions, param, node, funcname, offset,  machine_code);
-        break;
+    // case DataType::FUNC:
+    //     TranslateCallFunc(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::PRINTF:
+    //     TranslateCallPrintf(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::SCANF:
+    //     TranslateCallScanf(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::SQRT:
+    //     TranslateCallSqtr(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::LOG:
+    //     TranslateCallLog(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::SIN:
+    //     TranslateCallSin(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::COS:
+    //     TranslateCallCos(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::INITIALIZATE:
+    //     TranslateInit(fasm, num_const_str, functions, param, node, funcname, offset,  machine_code);
+    //     break;
+    // case DataType::MOV:
+    //     TranslateMov(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::IF:
+    //     TranslateIf(fasm, num_const_str, functions, param, node, funcname, offset,  machine_code);
+    //     break;
+    // case DataType::WHILE:
+    //     TranslateWhile(fasm, num_const_str, functions, param, node, funcname, offset,  machine_code);
+    //     break;
     case DataType::RET:
-        TranslateRet(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+        TranslateRet(gen, num_const_str, functions, node);
         break;
     default:
         break;
@@ -502,12 +468,12 @@ void TranslateCallFunc(FILE* fasm, int& num_const_str, List<node_t>* functions, 
         node_t call_func_param = SearchCallFunc(call_func_name, functions).GetLeft();
         while (node->dType() == DataType::COMMA && call_func_param.dType() == DataType::COMMA)
         {                    
-            TransferParamToFunc(fasm, num_const_str, node->GetRight(), call_func_param.GetRight(), functions, lst, funcname,  machine_code);
+            // TransferParamToFunc(fasm, num_const_str, node->GetRight(), call_func_param.GetRight(), functions, lst, funcname,  machine_code);
             node = node->GetLeft();
             call_func_param = call_func_param.GetLeft();
             number_op++;
         }
-        TransferParamToFunc(fasm, num_const_str, node, call_func_param, functions, lst, funcname,  machine_code);
+        // TransferParamToFunc(fasm, num_const_str, node, call_func_param, functions, lst, funcname,  machine_code);
         number_op++;
     }
     
@@ -530,26 +496,26 @@ node_t SearchCallFunc(const char* func_name, List<node_t>* functions)
     std::exit(EXIT_FAILURE);
 }
 
-void TransferParamToFunc(FILE* fasm, int& num_const_str, node_t* param, node_t param_call_func, List<node_t>* functions, List<variable>* lst, const char* funcname,  ByteArray& machine_code)
-{
-    if (param_call_func.dType() == DataType::NEW_VAR)
-    {
-        TranslateExp(fasm, num_const_str, functions, lst, param, funcname,  machine_code);
-    }
-    else if (param->dType() == DataType::VARIABLE)
-    {
-        uint64_t offset = OffsetVariable(lst, param);
-        fprintf(fasm, "\t\tlea\t\trax, [rbp - %ld]\n", offset);
-        fprintf(fasm, "\t\tpush\trax\n");
-        machine_code.AppendCmd(CMD::LEA_RAX_VAR_L, CMD::LEA_RAX_VAR_B, 4, -offset);
-        machine_code.AppendCmd(CMD::PUSH_RAX, 1);    
-    }
-    else
-    {
-        fprintf(stderr, "Error: Attempt to assign an rvalue to an lvalue\n");
-        exit(EXIT_FAILURE);
-    }
-}
+// void TransferParamToFunc(FILE* fasm, int& num_const_str, node_t* param, node_t param_call_func, List<node_t>* functions, List<variable>* lst, const char* funcname,  ByteArray& machine_code)
+// {
+//     if (param_call_func.dType() == DataType::NEW_VAR)
+//     {
+//         TranslateExp(fasm, num_const_str, functions, lst, param, funcname,  machine_code);
+//     }
+//     else if (param->dType() == DataType::VARIABLE)
+//     {
+//         uint64_t offset = OffsetVariable(lst, param);
+//         fprintf(fasm, "\t\tlea\t\trax, [rbp - %ld]\n", offset);
+//         fprintf(fasm, "\t\tpush\trax\n");
+//         machine_code.AppendCmd(CMD::LEA_RAX_VAR_L, CMD::LEA_RAX_VAR_B, 4, -offset);
+//         machine_code.AppendCmd(CMD::PUSH_RAX, 1);    
+//     }
+//     else
+//     {
+//         fprintf(stderr, "Error: Attempt to assign an rvalue to an lvalue\n");
+//         exit(EXIT_FAILURE);
+//     }
+// }
 
 void TranslateInit(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int initial_offset,  ByteArray& machine_code)
 {    
@@ -581,25 +547,25 @@ void TranslateInit(FILE* fasm, int& num_const_str, List<node_t>* functions, List
     {
         variable var(node->GetLeft(), false, offset);
         param->PushFront(var);        
-        TranslateMov(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+        // TranslateMov(fasm, num_const_str, functions, param, node, funcname,  machine_code);
     }
 }
 
-void TranslateMov(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
-{
-    const uint32_t BUF = machine_code.buf();
+// void TranslateMov(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
+// {
+//     const uint32_t BUF = machine_code.buf();
     
-    TranslateExp(fasm, num_const_str, functions, param, node->GetRight(), funcname,  machine_code);
+//     TranslateExp(fasm, num_const_str, functions, param, node->GetRight(), funcname,  machine_code);
 
-    uint64_t offset = OffsetVariable(param, node->GetLeft());
+//     uint64_t offset = OffsetVariable(param, node->GetLeft());
 
-    fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
-    fprintf(fasm, "\t\tmovsd\txmm0, qword [buffer]\n");
-    fprintf(fasm, "\t\tmovsd\tqword [rbp - %ld], xmm0\n", offset);
-    machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
-    machine_code.AppendCmd(CMD::MOVSD_XMM0_M64, BUF, 5);
-    machine_code.AppendCmd(CMD::MOVSD_VAR_XMM0_L, CMD::MOVSD_VAR_XMM0_B, 5, -offset);
-}
+//     fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
+//     fprintf(fasm, "\t\tmovsd\txmm0, qword [buffer]\n");
+//     fprintf(fasm, "\t\tmovsd\tqword [rbp - %ld], xmm0\n", offset);
+//     machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
+//     machine_code.AppendCmd(CMD::MOVSD_XMM0_M64, BUF, 5);
+//     machine_code.AppendCmd(CMD::MOVSD_VAR_XMM0_L, CMD::MOVSD_VAR_XMM0_B, 5, -offset);
+// }
 
 void TranslateCallScanf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname,  ByteArray& machine_code)
 {
@@ -653,11 +619,11 @@ void TranslateScanfReturn(FILE* fasm, int& num_const_str, List<node_t>* function
     
     if (node->GetRight())
     {
-        TranslateCallPrintf(fasm, num_const_str, functions, lst, node, funcname,  machine_code);
+        // TranslateCallPrintf(fasm, num_const_str, functions, lst, node, funcname,  machine_code);
     }
 
     TranslateBaseScanf(fasm,  machine_code);
-    GiveArgument(fasm, machine_code);
+    // GiveArgument(fasm, machine_code);
 }
 
 void ScanOne(FILE* fasm, uint64_t offset,  ByteArray& machine_code)
@@ -701,60 +667,50 @@ uint64_t OffsetVariable(List<variable>* param, node_t* var_ptr)
     return 0;
 }
 
-void TranslateRet(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
-{
-    const uint32_t BUF = machine_code.buf();
-    
+llvm::Value* TranslateRet(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node) {
     node = node->GetRight();
-    TranslateExp(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-
-    fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
-    fprintf(fasm, "\t\tmovsd\txmm0, qword [buffer]\n");
-    machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
-    machine_code.AppendCmd(CMD::MOVSD_XMM0_M64, BUF, 5);
-
-    std::string labelname = std::string(".ret_") + funcname;
-    fprintf(fasm, "\t\tjmp\t\t%s\n", labelname.c_str());
-    machine_code.AppendJmpLabel(labelname.c_str());
+    llvm::Value* returnValue = TranslateExp(gen, num_const_str, functions, node);
+    return gen.builder.CreateRet(returnValue);
 }
 
-void TranslateCallPrintf(FILE* fasm, int& num_const_str,  List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
-{    
-    node = node->GetRight();
 
-    List<node_t*> StackNodePtr; 
-    while (node && (node->dType() == DataType::COMMA))
-    {
-        StackNodePtr.PushBack(node->GetRight());
-        node = node->GetLeft();
-    }
+// void TranslateCallPrintf(FILE* fasm, int& num_const_str,  List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
+// {    
+//     node = node->GetRight();
 
-    if (node->dType() == DataType::CONST_STR)
-    {
-        PrintString(fasm, num_const_str++,  machine_code);
-    }
-    else
-    {
-        TranslateExp(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        PrintOne(fasm,  machine_code);
-    }  
+//     List<node_t*> StackNodePtr; 
+//     while (node && (node->dType() == DataType::COMMA))
+//     {
+//         StackNodePtr.PushBack(node->GetRight());
+//         node = node->GetLeft();
+//     }
+
+//     if (node->dType() == DataType::CONST_STR)
+//     {
+//         PrintString(fasm, num_const_str++,  machine_code);
+//     }
+//     else
+//     {
+//         TranslateExp(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+//         PrintOne(fasm,  machine_code);
+//     }  
     
-    for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
-    {
-        node_t* node = StackNodePtr.ShowBack();
-        if (node->dType() == DataType::CONST_STR)
-        {
-            PrintString(fasm, num_const_str++,  machine_code);
-        }
-        else
-        {
-            TranslateExp(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-            PrintOne(fasm,  machine_code);
-        }
-        StackNodePtr.PopBack();
-    }
-    PrintCharacter(fasm, '\n', machine_code);
-}
+//     for (int i = 0, size = StackNodePtr.Size(); i < size; i++)
+//     {
+//         node_t* node = StackNodePtr.ShowBack();
+//         if (node->dType() == DataType::CONST_STR)
+//         {
+//             PrintString(fasm, num_const_str++,  machine_code);
+//         }
+//         else
+//         {
+//             TranslateExp(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+//             PrintOne(fasm,  machine_code);
+//         }
+//         StackNodePtr.PopBack();
+//     }
+//     PrintCharacter(fasm, '\n', machine_code);
+// }
 
 void PrintOne(FILE* fasm,  ByteArray& machine_code)
 {
@@ -852,7 +808,7 @@ void TranslateWhile(FILE* fasm, int& num_const_str, List<node_t>* functions, Lis
         machine_code.AddLabel(while_loop);
     }
 
-    TranslateOpSequence(fasm, functions, param, node->GetRight(), funcname, offset,  machine_code);
+    // TranslateOpSequence(fasm, functions, param, node->GetRight(), funcname, offset,  machine_code);
 
     fprintf(fasm, ".while%dtest:\n", save_num);
     if (machine_code.stubsNotLoaded())
@@ -888,7 +844,7 @@ node_t* TranslateWhileCondSeq(FILE* fasm, int& num_const_str, List<node_t>* func
     }
     else
     {
-        WriteCmpCondition(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+        // WriteCmpCondition(fasm, num_const_str, functions, param, node, funcname,  machine_code);
 
         const char* jxx = nullptr;
         const char* jmp_mark = nullptr;
@@ -953,7 +909,7 @@ void TranslateIf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<v
     if (have_else)
     {
         node_t* op_else = node->GetRight();
-        TranslateOpSequence(fasm, functions, param, op_else->GetLeft(), funcname, offset,  machine_code);
+        // TranslateOpSequence(fasm, functions, param, op_else->GetLeft(), funcname, offset,  machine_code);
 
         fprintf(fasm, "\t\tjmp\t\t%s\n", if_end.c_str());
         machine_code.AppendJmpLabel(if_end);
@@ -966,7 +922,7 @@ void TranslateIf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<v
 
         if (op_else->GetRight()->dType() != DataType::IF)
         {
-            TranslateOpSequence(fasm, functions, param, op_else->GetRight(), funcname, offset,  machine_code);
+            // TranslateOpSequence(fasm, functions, param, op_else->GetRight(), funcname, offset,  machine_code);
         }
         else
         {
@@ -981,7 +937,7 @@ void TranslateIf(FILE* fasm, int& num_const_str, List<node_t>* functions, List<v
     }
     else
     {
-        TranslateOpSequence(fasm, functions, param, node->GetRight(), funcname, offset,  machine_code);
+        // TranslateOpSequence(fasm, functions, param, node->GetRight(), funcname, offset,  machine_code);
         
         fprintf(fasm, "%s:\n", if_end.c_str());
         if (machine_code.stubsNotLoaded())
@@ -1000,7 +956,7 @@ node_t* TranslateIfCondSeq(FILE* fasm, int& num_const_str, List<node_t>* functio
     }
     else
     {
-        WriteCmpCondition(fasm, num_const_str, functions, param, node, funcname,  machine_code);
+        // WriteCmpCondition(fasm, num_const_str, functions, param, node, funcname,  machine_code);
 
         const char* if_exit = (have_else) ? strings.if_else : strings.if_end;
         const char* jxx = nullptr;
@@ -1026,23 +982,23 @@ node_t* TranslateIfCondSeq(FILE* fasm, int& num_const_str, List<node_t>* functio
     }
 }
 
-void WriteCmpCondition(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
-{
-    const uint32_t BUF = machine_code.buf();
+// void WriteCmpCondition(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
+// {
+//     const uint32_t BUF = machine_code.buf();
     
-    TranslateExp(fasm, num_const_str, functions, param, node->GetLeft(), funcname,  machine_code);
-    fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
-    fprintf(fasm, "\t\tmovsd\txmm0, qword [buffer]\n");
-    machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
-    machine_code.AppendCmd(CMD::MOVSD_XMM0_M64, BUF, 5);
-    TranslateExp(fasm, num_const_str, functions, param, node->GetRight(), funcname,  machine_code);
-    fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
-    fprintf(fasm, "\t\tmovsd\txmm1, qword [buffer]\n");
-    fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
-    machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
-    machine_code.AppendCmd(CMD::MOVSD_XMM1_M64, BUF, 5);
-    machine_code.AppendCmd(CMD::COMISD_XMM0_XMM1, 4);    
-}
+//     TranslateExp(fasm, num_const_str, functions, param, node->GetLeft(), funcname,  machine_code);
+//     fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
+//     fprintf(fasm, "\t\tmovsd\txmm0, qword [buffer]\n");
+//     machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
+//     machine_code.AppendCmd(CMD::MOVSD_XMM0_M64, BUF, 5);
+//     TranslateExp(fasm, num_const_str, functions, param, node->GetRight(), funcname,  machine_code);
+//     fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
+//     fprintf(fasm, "\t\tmovsd\txmm1, qword [buffer]\n");
+//     fprintf(fasm, "\t\tcomisd\txmm0, xmm1\n");
+//     machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
+//     machine_code.AppendCmd(CMD::MOVSD_XMM1_M64, BUF, 5);
+//     machine_code.AppendCmd(CMD::COMISD_XMM0_XMM1, 4);    
+// }
 
 const char* Jnx(node_t* node)
 {
@@ -1092,64 +1048,69 @@ const char* Jxx(node_t* node)
     return nullptr;
 }
 
-void TranslateExp(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
-{    
+llvm::Value* TranslateExp(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node)
+{        
     switch (node->dType())
     {
     case DataType::VARIABLE:
-    {
-        TranslateVar(fasm, param, node, machine_code);
-        break;
-    }
+        return TranslateVar(node, gen);
     case DataType::ADD:
-        TranslateAdd(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::SUB:
-        TranslateSub(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::MUL:
-        TranslateMul(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::DIV:
-        TranslateDiv(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::DEG:
-        TranslatePow(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::CONSTANT:
-        TranslateConst(fasm, machine_code);
-        break;
-    case DataType::FUNC:
-        TranslateCallFunc(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        GiveArgument(fasm, machine_code);
-        break;
-    case DataType::SQRT:
-        TranslateCallSqtr(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;   
-    case DataType::SCANF:
-        TranslateCallScanf(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::LOG:
-        TranslateCallLog(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::SIN:
-        TranslateCallSin(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;
-    case DataType::COS:
-        TranslateCallCos(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-        break;    
+        return TranslateAdd(gen, num_const_str, functions, node);
+    // case DataType::SUB:
+    //     TranslateSub(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::MUL:
+    //     TranslateMul(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::DIV:
+    //     TranslateDiv(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::DEG:
+    //     TranslatePow(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::CONSTANT:
+    //     TranslateConst(gen, machine_code);
+    //     break;
+    // case DataType::FUNC:
+    //     TranslateCallFunc(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     GiveArgument(gen, machine_code);
+    //     break;
+    // case DataType::SQRT:
+    //     TranslateCallSqtr(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;   
+    // case DataType::SCANF:
+    //     TranslateCallScanf(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::LOG:
+    //     TranslateCallLog(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::SIN:
+    //     TranslateCallSin(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;
+    // case DataType::COS:
+    //     TranslateCallCos(gen, num_const_str, functions, param, node, funcname,  machine_code);
+    //     break;    
     default:
         break;
     }
+
+    return nullptr;
 }
 
-inline void TranslateVar(FILE* fasm, List<variable>* param, node_t* node, ByteArray& machine_code)
-{
-    uint64_t offset = OffsetVariable(param, node);
-    fprintf(fasm, "\t\tpush\tqword [rbp - %ld]\n", offset);
-    machine_code.AppendCmd(CMD::PUSH_VAR_L, CMD::PUSH_VAR_B, 3, -offset);
+
+llvm::Value* TranslateVar(node_t* node, IRGenerator& gen) {
+    auto varName = node->Name();
+    llvm::Value* var = nullptr;
+    if (gen.local_vars.find(varName) != gen.local_vars.end()) {
+        var = gen.local_vars[varName];
+    } else {
+        std::cout << termcolor::red << "Error: " << termcolor::reset
+                  << "variable '" << varName << "' is used before it is declared" << std::endl;
+    }
+    return var;
 }
 
+#if 0
 void TranslateSub(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
 {
     const uint32_t BUF = machine_code.buf();    
@@ -1173,17 +1134,15 @@ void TranslateSub(FILE* fasm, int& num_const_str, List<node_t>* functions, List<
     machine_code.AppendCmd(CMD::SUBSD_XMM0_XMM1, 4);
     GiveArgument(fasm, machine_code);
 }
+#endif
 
-void TranslateAdd(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
-{
-    TranslateExp(fasm, num_const_str, functions, param, node->GetLeft(), funcname,  machine_code);
-    TranslateExp(fasm, num_const_str, functions, param, node->GetRight(), funcname,  machine_code);
-    GetTwoArgument(fasm, machine_code);
-    fprintf(fasm, "\t\taddsd\txmm0, xmm1\n");
-    machine_code.AppendCmd(CMD::ADDSD_XMM0_XMM1, 4);
-    GiveArgument(fasm, machine_code);
+llvm::Value* TranslateAdd(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node) {
+    auto* leftValue  = TranslateExp(gen, num_const_str, functions, node->GetLeft());
+    auto* rightValue = TranslateExp(gen, num_const_str, functions, node->GetRight());
+    auto* result = gen.builder.CreateFAdd(leftValue, rightValue);
 }
 
+#if 0
 void TranslateMul(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname,  ByteArray& machine_code)
 {
     TranslateExp(fasm, num_const_str, functions, param, node->GetLeft(), funcname,  machine_code);
@@ -1314,3 +1273,5 @@ inline void GetTwoArgument(FILE* fasm, ByteArray& code)
     code.AppendCmd(CMD::POP_M64, BUF, 3);
     code.AppendCmd(CMD::MOVSD_XMM0_M64, BUF, 5);
 }
+
+#endif

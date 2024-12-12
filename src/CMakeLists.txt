@@ -9,9 +9,23 @@ set(CPP_SOURCES
     Variable.cpp
 )
 
+include_directories(${LLVM_INCLUDE_DIRS})
+add_definitions(${LLVM_DEFINITIONS})
+
+# llvm_map_components_to_libnames(LLVM_LIBS
+#     Core
+#     Support
+#     IRReader
+# )
+
 add_executable(${PROJECT_NAME} ${CPP_SOURCES})
 target_include_directories(${PROJECT_NAME}
                            PRIVATE ./include)
+
+target_link_libraries(${PROJECT_NAME} PRIVATE LLVM)
+
+add_subdirectory(${PROJECT_SOURCE_DIR}/termcolor ${CMAKE_CURRENT_BINARY_DIR}/termcolors)
+target_link_libraries(${PROJECT_NAME} PRIVATE termcolor)
 
 install(TARGETS ${PROJECT_NAME}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

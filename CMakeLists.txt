@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.2) 
-
+ 
 project(Compiller)
 
 set(CMAKE_CXX_STANDARD 17)
@@ -10,5 +10,9 @@ set(CMAKE_BUILD_TYPE RELEASE)
 set(STDLIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/stdlib/stdlib.bin")
 set(OUTPUT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/include/stdlibPath.h")
 configure_file(./src/include/stdlibPath.h.in ${OUTPUT_PATH} @ONLY)
+
+find_package(LLVM REQUIRED CONFIG)
+list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
+include(AddLLVM)
 
 add_subdirectory(src)

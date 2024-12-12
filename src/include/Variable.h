@@ -2,6 +2,7 @@
 #include <iostream>
 #include "data_t.h"
 #include <cassert>
+#include <cstdint>
 
 class variable
 {

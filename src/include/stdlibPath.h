@@ -1,2 +1,2 @@
 #pragma once
-#define STDLIB_PATH "/home/amadey/Projects/Compiller/stdlib/stdlib.bin"
+#define STDLIB_PATH "/home/amadey/projects/Compiller/stdlib/stdlib.bin"
