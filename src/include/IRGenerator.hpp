@@ -7,12 +7,13 @@
 #include <llvm/IR/Value.h>
 #include <llvm/Support/raw_ostream.h>
 
-struct IRGenerator {
+struct IRGenerator final {
     std::unordered_map<std::string, llvm::Value*> local_vars;
     llvm::LLVMContext context;
     llvm::Module module {"Module", context};
     llvm::IRBuilder<> builder {context};
     llvm::Function* current_function = nullptr;
+    std::unordered_map<std::string, llvm::Value*> string_literals;
 
     void dump() {
         module.print(llvm::outs(), nullptr);

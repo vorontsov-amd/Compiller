@@ -182,7 +182,7 @@ void AppendStr(FILE* fasm, node_t* node, ByteArray& machine_code)
 
 void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code)
 {
-    List<node_t>* functions = CreateLstFuncNode(proga);
+    std::vector<node_t*> functions = CreateLstFuncNode(proga);
     
 
     IRGenerator generator;
@@ -196,17 +196,15 @@ void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine
     }
 
     generator.dump();
-
-    delete functions;
 }
 
-List<node_t>* CreateLstFuncNode(List<DifferTree>& proga)
+std::vector<node_t*> CreateLstFuncNode(List<DifferTree>& proga)
 {
-    List<node_t>* lst = new List<node_t>;
+    std::vector<node_t*> lst;
 
     for (auto it = proga.begin(); it != proga.end(); ++it)
     {        
-        lst->PushBack(*it->Root()->GetRight());
+        lst.push_back(it->Root()->GetRight());
     }
 
     return lst;
@@ -241,7 +239,7 @@ void VerifyDefFunc(node_t* function)
     }
 }
 
-void TreeTranslate(DifferTree& function, List<node_t>* functions, IRGenerator& gen)
+void TreeTranslate(DifferTree& function, std::vector<node_t*> functions, IRGenerator& gen)
 {
     node_t* func = function.Root();
     VerifyDefFunc(func);
@@ -402,7 +400,7 @@ uint32_t SizeStackFrame(node_t* func, List<variable>* variables)
 }
 
 
-void TranslateOpSequence(IRGenerator& gen, List<node_t>* functions, node_t* node)
+void TranslateOpSequence(IRGenerator& gen, std::vector<node_t*> functions, node_t* node)
 {
     while (node && (node->dType() == DataType::END_OP))
     {
@@ -411,7 +409,7 @@ void TranslateOpSequence(IRGenerator& gen, List<node_t>* functions, node_t* node
     }
 }
 
-void TranslateOp(IRGenerator& gen, List<node_t>* functions, node_t* node)
+void TranslateOp(IRGenerator& gen, std::vector<node_t*> functions, node_t* node)
 {
     static int num_const_str = 0;    
     switch (node->dType())
@@ -419,9 +417,9 @@ void TranslateOp(IRGenerator& gen, List<node_t>* functions, node_t* node)
     // case DataType::FUNC:
     //     TranslateCallFunc(fasm, num_const_str, functions, param, node, funcname,  machine_code);
     //     break;
-    // case DataType::PRINTF:
-    //     TranslateCallPrintf(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-    //     break;
+    case DataType::PRINTF:
+        TranslateCallPrintf(gen, functions, node);
+        break;
     // case DataType::SCANF:
     //     TranslateCallScanf(fasm, num_const_str, functions, param, node, funcname,  machine_code);
     //     break;
@@ -450,7 +448,7 @@ void TranslateOp(IRGenerator& gen, List<node_t>* functions, node_t* node)
     //     TranslateWhile(fasm, num_const_str, functions, param, node, funcname, offset,  machine_code);
     //     break;
     case DataType::RET:
-        TranslateRet(gen, num_const_str, functions, node);
+        TranslateRet(gen, functions, node);
         break;
     default:
         break;
@@ -667,9 +665,9 @@ uint64_t OffsetVariable(List<variable>* param, node_t* var_ptr)
     return 0;
 }
 
-llvm::Value* TranslateRet(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node) {
+llvm::Value* TranslateRet(IRGenerator& gen, std::vector<node_t*> functions, node_t* node) {
     node = node->GetRight();
-    llvm::Value* returnValue = TranslateExp(gen, num_const_str, functions, node);
+    llvm::Value* returnValue = TranslateExp(gen, functions, node);
     return gen.builder.CreateRet(returnValue);
 }
 
@@ -712,77 +710,74 @@ llvm::Value* TranslateRet(IRGenerator& gen, int& num_const_str, List<node_t>* fu
 //     PrintCharacter(fasm, '\n', machine_code);
 // }
 
-void PrintOne(FILE* fasm,  ByteArray& machine_code)
-{
-    const uint32_t BUF = machine_code.buf();
-    const uint32_t BUF_STR = machine_code.string_buf();
+llvm::Instruction* TranslateCallPrintf(IRGenerator& gen, std::vector<node_t*> functions, node_t* node) {
+    using namespace llvm;
 
-    fprintf(fasm, "\t\tmov\t\trdi, str\n");
-    fprintf(fasm, "\t\tpop\t\tqword [buffer]\n");
-    fprintf(fasm, "\t\tmovsd\txmm0, qword [buffer]\n");
-    fprintf(fasm, "\t\tcall\tdtoa\n");
-    fprintf(fasm, "\t\tmov\t\trdx, rax\n");
-    fprintf(fasm, "\t\tmov\t\trdi, 1\n");
-    fprintf(fasm, "\t\tmov\t\trax, 1\n");
-    fprintf(fasm, "\t\tmov\t\trsi, str\n");
-    fprintf(fasm, "\t\tsyscall\n");
+    node = node->GetRight();
 
-    machine_code.AppendCmd(CMD::MOV_RDI_NUM, BUF_STR, 3);
-    machine_code.AppendCmd(CMD::POP_M64, BUF, 3);
-    machine_code.AppendCmd(CMD::MOVSD_XMM0_M64, BUF, 5);
-    machine_code.AppendCallFunc("dtoa");
-    machine_code.AppendCmd(CMD::MOV_RDX_RAX, 3);
-    machine_code.AppendCmd(CMD::MOV_RAX_1, 7);
-    machine_code.AppendCmd(CMD::MOV_RDI_1, 7);
-    machine_code.AppendCmd(CMD::MOV_RSI_NUM, BUF_STR, 3);
-    machine_code.AppendCmd(CMD::SYSCALL, 2);
+    std::vector<llvm::Value*> args;
+    while (node && (node->dType() == DataType::COMMA)) {
+        args.push_back(TranslateExp(gen, functions, node->GetRight()));
+        node = node->GetLeft();
+    }
 
-    PrintCharacter(fasm, ' ', machine_code);
+    if (node) {
+        args.push_back(TranslateExp(gen, functions, node));
+    }
+
+    for (auto it = args.rbegin(); it != args.rend(); ++it) {
+        if ((*it)->getType()->isPointerTy()) {
+            PrintString(gen, *it);
+        } else {
+            PrintOne(gen, *it, "%d ");
+        }
+    }
+
+    return PrintCharacter(gen, '\n');
 }
 
-void PrintCharacter(FILE* fasm, uint32_t character, ByteArray& machine_code)
-{
-    fprintf(fasm, "\t\tmov\t\trax, %d\n", character);
-    fprintf(fasm, "\t\tpush\trax\n");
-    fprintf(fasm, "\t\tmov\t\trdx, 1\n");
-    fprintf(fasm, "\t\tmov\t\trdi, 1\n");
-    fprintf(fasm, "\t\tmov\t\trax, 1\n");
-    fprintf(fasm, "\t\tmov\t\trsi, rsp\n");
-    fprintf(fasm, "\t\tsyscall\n");
-    fprintf(fasm, "\t\tpop\t\trax\n");
+llvm::Function* GetPrintfFunction(IRGenerator& gen) {
+    using namespace llvm;
 
-    machine_code.AppendCmd(CMD::MOV_RAX_NUMBER, character, 3);
-    machine_code.AppendCmd(CMD::PUSH_RAX, 1);
-    machine_code.AppendCmd(CMD::MOV_RDX_1, 7);
-    machine_code.AppendCmd(CMD::MOV_RDI_1, 7);
-    machine_code.AppendCmd(CMD::MOV_RAX_1, 7);
-    machine_code.AppendCmd(CMD::MOV_RSI_RSP, 3);
-    machine_code.AppendCmd(CMD::SYSCALL, 2);
-    machine_code.AppendCmd(CMD::POP_RAX, 1);
+    // Check if printf is already declared
+    auto* printfFunc = gen.module.getFunction("printf");
+    if (!printfFunc) {
+        // Declare printf function
+        auto* printfType = FunctionType::get(Type::getInt32Ty(gen.context), PointerType::get(Type::getInt8Ty(gen.context), 0), true);
+        printfFunc = Function::Create(printfType, Function::ExternalLinkage, "printf", gen.module);
+    }
+    return printfFunc;
 }
 
-void PrintString(FILE* fasm, int num_const_str,  ByteArray& machine_code)
-{
-    std::string mark = "str_" + std::to_string(num_const_str);
+llvm::Instruction* PrintString(IRGenerator& gen, llvm::Value* strValue) {
+    using namespace llvm;
+
+    auto* printfFunc = GetPrintfFunction(gen);
+    auto* formatStr  = CreateGlobalString(gen, "%s ", "format_str");
+
+    return gen.builder.CreateCall(printfFunc, {formatStr, strValue});
+}
+
+llvm::Instruction* PrintOne(IRGenerator& gen, llvm::Value* value, const char* format) {
+    using namespace llvm;
+
+    auto* printfFunc = GetPrintfFunction(gen);
+    auto* formatStr  = CreateGlobalString(gen, "%lg ", "format_int");
+
+    return gen.builder.CreateCall(printfFunc, {formatStr, value});
+}
+
+
+llvm::Instruction* PrintCharacter(IRGenerator& gen, char character) {
+    using namespace llvm;
+
+    auto* printfFunc = GetPrintfFunction(gen);
+    auto* formatStr  = CreateGlobalString(gen, "%c", "format_char");
+    auto* charValue = ConstantInt::get(Type::getInt8Ty(gen.context), character);
     
-    auto [str_vaddr, str_length] = machine_code.string_info(mark);
-
-    fprintf(fasm, "\t\tmov\t\trsi, str_%d\n", num_const_str);
-    fprintf(fasm, "\t\tmov\t\trdi, 1\n");
-    fprintf(fasm, "\t\tmov\t\trax, 1\n");
-    fprintf(fasm, "\t\tmov\t\trdx, %d\n", str_length);  
-    fprintf(fasm, "\t\tsyscall\n");
-
-    machine_code.AppendCmd(CMD::MOV_RSI_NUM, 3);
-    machine_code.Append(str_vaddr);
-    machine_code.AppendCmd(CMD::MOV_RDI_1, 7);
-    machine_code.AppendCmd(CMD::MOV_RAX_1, 7);
-    machine_code.AppendCmd(CMD::MOV_RDX_NUM, 3);
-    machine_code.Append(str_length);
-    machine_code.AppendCmd(CMD::SYSCALL, 2);
-
-    PrintCharacter(fasm, ' ', machine_code);
+    return gen.builder.CreateCall(printfFunc, {formatStr, charValue});
 }
+
 
 void TranslateWhile(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* param, node_t* node, const char* funcname, int offset,  ByteArray& machine_code)
 { 
@@ -1048,14 +1043,53 @@ const char* Jxx(node_t* node)
     return nullptr;
 }
 
-llvm::Value* TranslateExp(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node)
+
+llvm::Value* TranslateStringLiteral(IRGenerator& gen, node_t* node) {
+    using namespace llvm;
+    std::string literal = node->Name();
+    std::string literalName = "str_literal_" + std::to_string(gen.string_literals.size());
+    return CreateGlobalString(gen, literal, literalName);
+}
+
+llvm::Value* CreateGlobalString(IRGenerator& gen, const std::string& literal, const std::string& literalName) {
+    using namespace llvm;
+    
+    auto it = gen.string_literals.find(literal);
+    if (it != gen.string_literals.end()) {
+        return it->second;
+    }
+
+    auto* strConstant = ConstantDataArray::getString(gen.context, literal, true);
+    auto* globalVar = new GlobalVariable(
+        gen.module,
+        strConstant->getType(),
+        true, // Constant
+        GlobalValue::PrivateLinkage,
+        strConstant,
+        literalName
+    );
+
+    auto* zero = ConstantInt::get(Type::getInt32Ty(gen.context), 0);
+    auto* ptr = gen.builder.CreateGEP(
+        strConstant->getType(),
+        globalVar,
+        {zero, zero}
+    );
+
+    gen.string_literals[literal] = ptr;
+    return ptr;
+}
+
+llvm::Value* TranslateExp(IRGenerator& gen, std::vector<node_t*> functions, node_t* node)
 {        
     switch (node->dType())
     {
     case DataType::VARIABLE:
         return TranslateVar(node, gen);
     case DataType::ADD:
-        return TranslateAdd(gen, num_const_str, functions, node);
+        return TranslateAdd(gen, functions, node);
+    case DataType::CONST_STR:
+        return TranslateStringLiteral(gen, node); 
     // case DataType::SUB:
     //     TranslateSub(gen, num_const_str, functions, param, node, funcname,  machine_code);
     //     break;
@@ -1136,10 +1170,10 @@ void TranslateSub(FILE* fasm, int& num_const_str, List<node_t>* functions, List<
 }
 #endif
 
-llvm::Value* TranslateAdd(IRGenerator& gen, int& num_const_str, List<node_t>* functions, node_t* node) {
-    auto* leftValue  = TranslateExp(gen, num_const_str, functions, node->GetLeft());
-    auto* rightValue = TranslateExp(gen, num_const_str, functions, node->GetRight());
-    auto* result = gen.builder.CreateFAdd(leftValue, rightValue);
+llvm::Value* TranslateAdd(IRGenerator& gen, std::vector<node_t*> functions, node_t* node) {
+    auto* leftValue  = TranslateExp(gen, functions, node->GetLeft());
+    auto* rightValue = TranslateExp(gen, functions, node->GetRight());
+    return gen.builder.CreateFAdd(leftValue, rightValue);
 }
 
 #if 0
