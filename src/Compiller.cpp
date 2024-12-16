@@ -268,8 +268,13 @@ llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen) {
         }
     }
 
-    auto* funcType = FunctionType::get(Type::getVoidTy(gen.context), argTypes, false);
-    auto* llvmFunc = Function::Create(funcType, Function::ExternalLinkage, funcName, &gen.module);
+    auto* funcType = FunctionType::get(Type::getDoubleTy(gen.context), argTypes, false);
+
+
+    auto* llvmFunc = gen.module.getFunction(funcName);
+    if (!llvmFunc) {
+        llvmFunc = Function::Create(funcType, Function::ExternalLinkage, funcName, &gen.module);
+    }
 
     unsigned idx = 0;
     for (auto&& arg : llvmFunc->args()) {
@@ -292,7 +297,7 @@ llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen) {
         } else {
             gen.builder.CreateStore(&arg, localVar);
         }
-        gen.local_vars[localVarName] = localVar;
+        gen.local_vars[arg.getName().str()] = localVar;
     }
 
     return llvmFunc;
@@ -308,13 +313,14 @@ void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen) {
     unsigned idx = 0;
     for (auto&& arg : llvmFunc->args()) {
         if (arg.getType()->isPointerTy()) {
-            auto localVarName = arg.getName().str() + "_local";
-            auto* updatedValue = gen.local_vars[localVarName];
+            auto* updatedValuePtr = gen.local_vars[arg.getName().str()];
+            auto* updatedValue = gen.builder.CreateLoad(Type::getDoubleTy(gen.context), updatedValuePtr);
             gen.builder.CreateStore(updatedValue, &arg);
         }
     }
 
-    gen.builder.CreateRetVoid();
+    auto zero = CreateFloatConstant(gen, 0.0);
+    gen.builder.CreateRet(zero);
 }
 
 std::vector<variable> FillListVariables(node_t* node)
@@ -414,9 +420,9 @@ void TranslateOp(IRGenerator& gen, const std::vector<node_t*>& functions, node_t
 {   
     switch (node->dType())
     {
-    // case DataType::FUNC:
-    //     TranslateCallFunc(fasm, num_const_str, functions, param, node, funcname,  machine_code);
-    //     break;
+    case DataType::FUNC:
+        TranslateCallFunc(gen, functions, node);
+        break;
     case DataType::PRINTF:
         TranslateCallPrintf(gen, functions, node);
         break;
@@ -455,65 +461,76 @@ void TranslateOp(IRGenerator& gen, const std::vector<node_t*>& functions, node_t
     }
 }
 
-void TranslateCallFunc(FILE* fasm, int& num_const_str, List<node_t>* functions, List<variable>* lst, node_t* node, const char* funcname,  ByteArray& machine_code)
-{
-    const char* call_func_name = node->Name();
+llvm::Function* GetOrCreateFunction(IRGenerator& gen, node_t* func) {
+    using namespace llvm;
+
+    std::string funcName = func->Name();
+
+    Function* targetFunc = gen.module.getFunction(funcName);
+    if (!targetFunc) {
+
+        auto variables = FillListVariables(func);
+
+        std::vector<Type*> argTypes;
+        for (auto variable : variables) {
+            if (variable.IsLink()) {
+                argTypes.push_back(Type::getDoubleTy(gen.context)->getPointerTo());
+            } else {
+                argTypes.push_back(Type::getDoubleTy(gen.context));
+            }
+        }
+
+        auto* funcType = FunctionType::get(Type::getDoubleTy(gen.context), argTypes, false);
+        targetFunc = Function::Create(funcType, Function::ExternalLinkage, funcName, &gen.module);
+    }
+
+    return targetFunc;
+}
+
+llvm::Value* TranslateCallFunc(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
+    const std::string callFuncName = node->Name();
     node = node->GetRight();
 
-    int number_op = 0;
-    if (node)
-    {
-        node_t call_func_param = SearchCallFunc(call_func_name, functions).GetLeft();
-        while (node->dType() == DataType::COMMA && call_func_param.dType() == DataType::COMMA)
-        {                    
-            // TransferParamToFunc(fasm, num_const_str, node->GetRight(), call_func_param.GetRight(), functions, lst, funcname,  machine_code);
+    auto* callingFunc = SearchCallFunc(callFuncName, functions);
+    auto* llvmFunction = GetOrCreateFunction(gen, callingFunc);
+
+    // Collect parameters
+    std::vector<llvm::Value*> args;
+    if (node) {
+        node_t* callFuncParams = callingFunc->GetLeft();
+        while (node->dType() == DataType::COMMA && callFuncParams->dType() == DataType::COMMA) {
+            args.push_back(TransferParamToFunc(gen, functions, node->GetRight(), callFuncParams->GetRight()));
             node = node->GetLeft();
-            call_func_param = call_func_param.GetLeft();
-            number_op++;
+            callFuncParams = callFuncParams->GetLeft();
         }
-        // TransferParamToFunc(fasm, num_const_str, node, call_func_param, functions, lst, funcname,  machine_code);
-        number_op++;
+        args.push_back(TransferParamToFunc(gen, functions, node, callFuncParams));
     }
-    
-    fprintf(fasm, "\t\tcall\t%s\n", call_func_name);
-    fprintf(fasm, "\t\tadd\t\trsp, %ld\n", number_op * sizeof(double));
-    machine_code.AppendCallFunc(call_func_name);
-    machine_code.AppendCmd(CMD::ADD_RSP_NUM_L, CMD::ADD_RSP_NUM_B, 4, number_op * sizeof(double));
+
+    std::reverse(args.begin(), args.end());
+    return gen.builder.CreateCall(llvmFunction, args);
 }
 
-node_t SearchCallFunc(const char* func_name, List<node_t>* functions)
-{
-    for (auto it = functions->begin(); it != functions->end(); ++it)
-    {
-        if (strcmp(it->Name(), func_name) == 0)
-        {
-            return *it;
+node_t* SearchCallFunc(const std::string& funcName, const std::vector<node_t*>& functions) {
+    for (auto* funcNode : functions) {
+        if (funcNode->Name() == funcName) {
+            return funcNode;
         }
     }
-    std::cerr << "Function " << func_name << " not found!";
-    std::exit(EXIT_FAILURE);
+    throw std::runtime_error("Function " + funcName + " not found in list of declared functions!");
 }
 
-// void TransferParamToFunc(FILE* fasm, int& num_const_str, node_t* param, node_t param_call_func, List<node_t>* functions, List<variable>* lst, const char* funcname,  ByteArray& machine_code)
-// {
-//     if (param_call_func.dType() == DataType::NEW_VAR)
-//     {
-//         TranslateExp(fasm, num_const_str, functions, lst, param, funcname,  machine_code);
-//     }
-//     else if (param->dType() == DataType::VARIABLE)
-//     {
-//         uint64_t offset = OffsetVariable(lst, param);
-//         fprintf(fasm, "\t\tlea\t\trax, [rbp - %ld]\n", offset);
-//         fprintf(fasm, "\t\tpush\trax\n");
-//         machine_code.AppendCmd(CMD::LEA_RAX_VAR_L, CMD::LEA_RAX_VAR_B, 4, -offset);
-//         machine_code.AppendCmd(CMD::PUSH_RAX, 1);    
-//     }
-//     else
-//     {
-//         fprintf(stderr, "Error: Attempt to assign an rvalue to an lvalue\n");
-//         exit(EXIT_FAILURE);
-//     }
-// }
+llvm::Value* TransferParamToFunc(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* param, node_t* paramCallFunc) {
+    if (paramCallFunc->dType() == DataType::NEW_VAR) {
+        // Directly translate the expression for a new variable
+        return TranslateExp(gen, functions, param);
+    } else if (param->dType() == DataType::VARIABLE) {
+        // Load the variable from memory
+        return TranslateVar(param, gen, false);
+    } else {
+        throw std::runtime_error("Error: Attempt to assign an rvalue to an lvalue");
+    }
+}
+
 
 void TranslateInit(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
         
@@ -859,11 +876,8 @@ llvm::Value* TranslateExp(IRGenerator& gen, const std::vector<node_t*>& function
         return TranslatePow(gen, functions, node);
     case DataType::CONSTANT:
         return TranslateFloatConstant(gen, node);
-    // case DataType::FUNC:
-    //     TranslateCallFunc(gen, num_const_str, functions, param, node, funcname,  machine_code);
-    //     GiveArgument(gen, machine_code);
-    //     break;
-
+    case DataType::FUNC:
+        return TranslateCallFunc(gen, functions, node);
     case DataType::SCANF:
         return TranslateCallInput(gen, functions, node);
     case DataType::SQRT:
@@ -888,6 +902,8 @@ llvm::Value* TranslateVar(node_t* node, IRGenerator& gen, bool load) {
         auto* var_pointer = gen.local_vars[varName];
         if (load) {
             var = gen.builder.CreateLoad(llvm::Type::getDoubleTy(gen.context), var_pointer);
+        } else {
+            var = var_pointer;
         }
     } else {
         std::cout << termcolor::red << "Error: " << termcolor::reset
