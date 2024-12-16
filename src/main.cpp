@@ -13,7 +13,8 @@ int main(int argc, char const *argv[])
 	// lst.GraphDump();
 
 	List<DifferTree> tree = GetGrammar(lst);
-    // ProgrammDump(tree);
+    ProgrammDump(tree);
+    // return 0;
 
     TranslateToAsm(tree, filename_code);
 

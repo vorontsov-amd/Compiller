@@ -14,6 +14,7 @@ struct IRGenerator final {
     llvm::IRBuilder<> builder {context};
     llvm::Function* current_function = nullptr;
     std::unordered_map<std::string, llvm::Value*> string_literals;
+    std::unordered_map<double, llvm::Value*> fp_literals;
 
     void dump() {
         module.print(llvm::outs(), nullptr);
