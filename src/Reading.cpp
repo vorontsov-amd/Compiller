@@ -1,23 +1,22 @@
 #include "Reading.h"
 
 
-List<DifferTree> GetGrammar(List<node_t>& programm)
+std::vector<DifferTree*> GetGrammar(std::deque<node_t>& programm)
 {    
-	List<DifferTree> project;
-	while (programm.ShowFront().Type() != NodeType::TERMINATED)
+	std::vector<DifferTree*> project;
+	while (programm.front().Type() != NodeType::TERMINATED)
 	{
 		DifferTree* tree = new DifferTree(GetDefFunc(programm));
-		project.PushBack(*tree);
+		project.push_back(tree);
 	}
 	return project;
 }
 
-
-node_t& GetDefFunc(List<node_t>& programm)
+node_t& GetDefFunc(std::deque<node_t>& programm)
 {
 	CheckValidFunc(programm);
-	node_t func = programm.ShowFront();
-	programm.PopFront();
+	node_t func = programm.front();
+	programm.pop_front();
 	CheckOpRoundBr(programm);
 	
 	node_t* left = GetParamSequence(programm);
@@ -29,26 +28,26 @@ node_t& GetDefFunc(List<node_t>& programm)
 	return *new node_t(NodeType::WORD, DataType::DEFINE, "define", nullptr, function);
 }
 
-void CheckValidFunc(List<node_t>& programm)
+void CheckValidFunc(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().Type() != NodeType::WORD || strcmp(programm.ShowFront().value().string_ptr, "define") != 0)
+	if (programm.front().Type() != NodeType::WORD || strcmp(programm.front().value().string_ptr, "define") != 0)
 	{
-		std::cout << programm.ShowFront() << "\n";
+		std::cout << programm.front() << "\n";
 		fprintf(stderr, "Functions not found\n");
 		exit(EXIT_FAILURE);
 	}
-	programm.PopFront();
+	programm.pop_front();
 	CheckWord(programm);
 }
 
 
-node_t* GetOpSequence(List<node_t>& programm)
+node_t* GetOpSequence(std::deque<node_t>& programm)
 {    
 	node_t* first_op = GetOperator(programm);
 	node_t* current = first_op;
-    while (programm.ShowFront().dType() == DataType::END_OP)
+    while (programm.front().dType() == DataType::END_OP)
     {
-		programm.PopFront();
+		programm.pop_front();
 		node_t* second_op = GetOperator(programm);
         current->SetRight(second_op);
 		current = second_op;
@@ -56,27 +55,27 @@ node_t* GetOpSequence(List<node_t>& programm)
     return first_op;
 }
 
-node_t* GetOperator(List<node_t>& programm)
+node_t* GetOperator(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().Type() == NodeType::WORD || programm.ShowFront().Type() == NodeType::WORD_WITH_NUMBERS)
+	if (programm.front().Type() == NodeType::WORD || programm.front().Type() == NodeType::WORD_WITH_NUMBERS)
 	{
-		if (strcmp(programm.ShowFront().value().string_ptr, "while") == 0)
+		if (strcmp(programm.front().value().string_ptr, "while") == 0)
 		{
 			node_t* op = GetWhile(programm);
 			op->SetDtype(DataType::WHILE);
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
-		else if (strcmp(programm.ShowFront().value().string_ptr, "if") == 0)
+		else if (strcmp(programm.front().value().string_ptr, "if") == 0)
 		{
 			node_t* op = GetIf(programm);
 			op->SetDtype(DataType::IF);
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", op, nullptr);
 		}	
-		else if (strcmp(programm.ShowFront().value().string_ptr, "return") == 0)
+		else if (strcmp(programm.front().value().string_ptr, "return") == 0)
 		{
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", GetReturn(programm), nullptr);
 		}
-		else if (strcmp(programm.ShowFront().value().string_ptr, "var") == 0)
+		else if (strcmp(programm.front().value().string_ptr, "var") == 0)
 		{
 			return new node_t(NodeType::OPERATOR, DataType::END_OP, ";", GetInit(programm), nullptr);
 		}
@@ -89,48 +88,48 @@ node_t* GetOperator(List<node_t>& programm)
 }
 
 
-node_t* GetReturn(List<node_t>& programm)
+node_t* GetReturn(std::deque<node_t>& programm)
 {
-	programm.PopFront();
+	programm.pop_front();
 	return new node_t(NodeType::WORD, DataType::RET, "return", nullptr, GetExpression(programm));
 }
 
 
-node_t* GetRetFunc(List<node_t>& programm)
+node_t* GetRetFunc(std::deque<node_t>& programm)
 {
-	node_t func = programm.ShowFront();
-	programm.PopFront();
-	if (programm.ShowFront().dType() == DataType::OP_ROUND_BR)
+	node_t func = programm.front();
+	programm.pop_front();
+	if (programm.front().dType() == DataType::OP_ROUND_BR)
 	{
 		return GetFunc(programm, func);
 	}
 	else 
 	{
-		programm.PushFront(func);
+		programm.push_front(func);
 		return GetVar(programm);
 	}
 }
 
 
-node_t* GetCallFunc(List<node_t>& programm)
+node_t* GetCallFunc(std::deque<node_t>& programm)
 {
-	node_t func = programm.ShowFront();
-	programm.PopFront();
-	if (programm.ShowFront().dType() == DataType::OP_ROUND_BR)
+	node_t func = programm.front();
+	programm.pop_front();
+	if (programm.front().dType() == DataType::OP_ROUND_BR)
 	{
 		return GetFunc(programm, func);
 	}
 	else 
 	{
-		programm.PushFront(func);
+		programm.push_front(func);
 		return GetAssign(programm);
 	}
 }
 
 
-node_t* GetFunc(List<node_t>& programm, node_t& func)
+node_t* GetFunc(std::deque<node_t>& programm, node_t& func)
 {
-	programm.PopFront();
+	programm.pop_front();
 	bool no_string = true;
 	node_t* first_parametr = GetArgumentSequence(programm, no_string);
 	CheckClsRoundBr(programm);
@@ -170,12 +169,12 @@ node_t* GetFunc(List<node_t>& programm, node_t& func)
 	}
 }
 
-node_t* GetParamSequence(List<node_t>& programm)
+node_t* GetParamSequence(std::deque<node_t>& programm)
 {
 	node_t* first_parametr = GetNewVar(programm);
-	while (programm.ShowFront().dType() == DataType::COMMA)
+	while (programm.front().dType() == DataType::COMMA)
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* second_parametr = GetNewVar(programm);
 		first_parametr = new node_t(NodeType::OPERATOR, DataType::COMMA, ",", first_parametr, second_parametr);
 	}
@@ -183,23 +182,23 @@ node_t* GetParamSequence(List<node_t>& programm)
 }
 
 
-node_t* GetArgumentSequence(List<node_t>& programm, bool& no_string)
+node_t* GetArgumentSequence(std::deque<node_t>& programm, bool& no_string)
 {
 	auto GetArgument = GetExpression;
-	if (programm.ShowFront().dType() == DataType::QUOTE)
+	if (programm.front().dType() == DataType::QUOTE)
 	{
 		no_string = false;
-		programm.PopFront();
+		programm.pop_front();
 		GetArgument = GetStr;
 	}
 	
 	node_t* first_parametr = GetArgument(programm);
-	while (programm.ShowFront().dType() == DataType::COMMA)
+	while (programm.front().dType() == DataType::COMMA)
 	{
-		programm.PopFront();
-		if (programm.ShowFront().dType() == DataType::QUOTE)
+		programm.pop_front();
+		if (programm.front().dType() == DataType::QUOTE)
 		{
-			programm.PopFront();
+			programm.pop_front();
 			GetArgument = GetStr;
 		}
 		else
@@ -213,43 +212,43 @@ node_t* GetArgumentSequence(List<node_t>& programm, bool& no_string)
 }
 
 
-node_t* GetStr(List<node_t>& programm)
+node_t* GetStr(std::deque<node_t>& programm)
 {
-	std::string str = programm.ShowFront().Name();
-	programm.PopFront();
+	std::string str = programm.front().Name();
+	programm.pop_front();
 	
-	while (programm.ShowFront().dType() != DataType::QUOTE)
+	while (programm.front().dType() != DataType::QUOTE)
 	{
 		str += " ";
-		str += programm.ShowFront().Name();
-		programm.PopFront();
+		str += programm.front().Name();
+		programm.pop_front();
 	}
-	programm.PopFront();
+	programm.pop_front();
 	return new node_t(NodeType::WORD, DataType::CONST_STR, str.c_str());
 }
 
 
 
-node_t* GetNewVar(List<node_t>& programm)
+node_t* GetNewVar(std::deque<node_t>& programm)
 {
-	if ((programm.ShowFront().Type() == NodeType::WORD) && (strcmp(programm.ShowFront().value().string_ptr, "new") == 0))
+	if ((programm.front().Type() == NodeType::WORD) && (strcmp(programm.front().value().string_ptr, "new") == 0))
 	{
-		programm.PopFront();
+		programm.pop_front();
 		return new node_t(NodeType::WORD, DataType::NEW_VAR, "new", nullptr, GetVar(programm));
 	}
 	else return GetVar(programm);
 }
 
 
-node_t* GetInit(List<node_t>& programm)
+node_t* GetInit(std::deque<node_t>& programm)
 {
-	programm.PopFront();
+	programm.pop_front();
 	CheckWord(programm);
 
 	node_t* lValue = GetVar(programm);
-	if (programm.ShowFront().dType() == DataType::MOV)
+	if (programm.front().dType() == DataType::MOV)
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* rValue = GetExpression(programm);
 		node_t* expression =  new node_t(NodeType::OPERATOR, DataType::MOV, "=", lValue, rValue);
 		return new node_t(NodeType::WORD, DataType::INITIALIZATE, "var", nullptr, expression);
@@ -261,9 +260,9 @@ node_t* GetInit(List<node_t>& programm)
 
 }
 
-void CheckWord(List<node_t>& programm)
+void CheckWord(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().Type() != NodeType::WORD && programm.ShowFront().Type() != NodeType::WORD_WITH_NUMBERS)
+	if (programm.front().Type() != NodeType::WORD && programm.front().Type() != NodeType::WORD_WITH_NUMBERS)
 	{
 		fprintf(stderr, "The variable or function name must be a word or a word with numbers\n");
 		exit(EXIT_FAILURE);
@@ -271,69 +270,69 @@ void CheckWord(List<node_t>& programm)
 }
 
 
-node_t* GetAssign(List<node_t>& programm)
+node_t* GetAssign(std::deque<node_t>& programm)
 {
 	node_t* lValue = GetVar(programm);
-	if (programm.ShowFront().dType() == DataType::MOV)
+	if (programm.front().dType() == DataType::MOV)
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* rValue = GetExpression(programm);
 		return new node_t(NodeType::OPERATOR, DataType::MOV, "=", lValue, rValue);
 	}
 	else
 	{
-		fprintf(stderr, "Unknown operator: %s\n", programm.ShowFront().value().string_ptr);
+		fprintf(stderr, "Unknown operator: %s\n", programm.front().value().string_ptr);
 		exit(EXIT_FAILURE);
 	}
 }
 
 
-void CheckOpRoundBr(List<node_t>& programm)
+void CheckOpRoundBr(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().dType() != DataType::OP_ROUND_BR)
+	if (programm.front().dType() != DataType::OP_ROUND_BR)
 	{
 		fprintf(stderr, "Missing opening bracket '('\n");
 		exit(EXIT_FAILURE);
 	}
-	else programm.PopFront();
+	else programm.pop_front();
 }
 
-void CheckClsRoundBr(List<node_t>& programm)
+void CheckClsRoundBr(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().dType() != DataType::CLS_ROUND_BR)
+	if (programm.front().dType() != DataType::CLS_ROUND_BR)
 	{
-		std::cout << programm.ShowFront();
+		std::cout << programm.front();
 		fprintf(stderr, "Missing closing bracket ')'\n");
 		exit(EXIT_FAILURE);
 	}
-	else programm.PopFront();
+	else programm.pop_front();
 }
 
-void CheckOpShapeBr(List<node_t>& programm)
+void CheckOpShapeBr(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().dType() != DataType::OP_SHAPE_BR)
+	if (programm.front().dType() != DataType::OP_SHAPE_BR)
 	{
 		fprintf(stderr, "Missing opening bracket '{'\n");
 		exit(EXIT_FAILURE);
 	}
-	else programm.PopFront();
+	else programm.pop_front();
 }
 
-void CheckClsShapeBr(List<node_t>& programm)
+void CheckClsShapeBr(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().dType() != DataType::CLS_SHAPE_BR)
+	if (programm.front().dType() != DataType::CLS_SHAPE_BR)
 	{
 		fprintf(stderr, "Missing closing bracket '}'\n");
 		exit(EXIT_FAILURE);
 	}
-	else programm.PopFront();
+	else programm.pop_front();
 }
 
 
 
-node_t* GetIf(List<node_t>& programm)
+node_t* GetIf(std::deque<node_t>& programm)
 {
-	programm.PopFront();
+	programm.pop_front();
 
 	CheckOpRoundBr(programm);
 	node_t* conditions = GetCondExpression(programm);
@@ -344,17 +343,17 @@ node_t* GetIf(List<node_t>& programm)
 }
 
 
-node_t* GetElse(List<node_t>& programm)
+node_t* GetElse(std::deque<node_t>& programm)
 {
 	CheckOpShapeBr(programm);
 	node_t* if_op_sequense = GetOpSequence(programm);
 	CheckClsShapeBr(programm);
 
-	if (strcmp(programm.ShowFront().value().string_ptr, "else") ==0 )
+	if (strcmp(programm.front().value().string_ptr, "else") ==0 )
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* else_op_sequense = nullptr;
-		if (strcmp(programm.ShowFront().value().string_ptr, "if") !=0 )
+		if (strcmp(programm.front().value().string_ptr, "if") !=0 )
 		{
 			CheckOpShapeBr(programm);
 			else_op_sequense = GetOpSequence(programm);
@@ -374,9 +373,9 @@ node_t* GetElse(List<node_t>& programm)
 
 
 
-node_t* GetWhile(List<node_t>& programm)
+node_t* GetWhile(std::deque<node_t>& programm)
 {
-	programm.PopFront();
+	programm.pop_front();
 
 	CheckOpRoundBr(programm);
 	node_t* conditions = GetCondExpression(programm);
@@ -389,12 +388,12 @@ node_t* GetWhile(List<node_t>& programm)
 }
 
 
-node_t* GetCondExpression(List<node_t>& programm)
+node_t* GetCondExpression(std::deque<node_t>& programm)
 {
 	node_t* cond = GetCondTerm(programm);
-	while (programm.ShowFront().dType() == DataType::OR)
+	while (programm.front().dType() == DataType::OR)
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* cond2 = GetCondTerm(programm);
 		cond = new node_t(NodeType::OPERATOR, DataType::OR, "||", cond, cond2);
 	}
@@ -402,12 +401,12 @@ node_t* GetCondExpression(List<node_t>& programm)
 }
 
 
-node_t* GetCondTerm(List<node_t>& programm)
+node_t* GetCondTerm(std::deque<node_t>& programm)
 {
 	node_t* cond = GetPrimaryCondExpression(programm);
-	while (programm.ShowFront().dType() == DataType::AND)
+	while (programm.front().dType() == DataType::AND)
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* cond2 = GetPrimaryCondExpression(programm);
 		cond = new node_t(NodeType::OPERATOR, DataType::AND, "&&", cond, cond2);
 	}
@@ -415,11 +414,11 @@ node_t* GetCondTerm(List<node_t>& programm)
 }
 
 
-node_t* GetPrimaryCondExpression(List<node_t>& programm)
+node_t* GetPrimaryCondExpression(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().dType() == DataType::OP_ROUND_BR)
+	if (programm.front().dType() == DataType::OP_ROUND_BR)
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* val = GetCondExpression(programm);
 		CheckClsRoundBr(programm);
 		return val;
@@ -428,12 +427,12 @@ node_t* GetPrimaryCondExpression(List<node_t>& programm)
 }
 
 
-node_t* GetConditions(List<node_t>& programm)
+node_t* GetConditions(std::deque<node_t>& programm)
 {
 	node_t* left_op = GetExpression(programm);
 	
-	node_t op = programm.ShowFront();
-	programm.PopFront();
+	node_t op = programm.front();
+	programm.pop_front();
 
 	node_t* right_op = GetExpression(programm);
 
@@ -463,14 +462,14 @@ node_t* GetConditions(List<node_t>& programm)
 }
 
 
-node_t* GetTerm(List<node_t>& programm)
+node_t* GetTerm(std::deque<node_t>& programm)
 {
 	node_t* val = GetPower(programm);
 
-	while (programm.ShowFront().dType() == DataType::MUL || programm.ShowFront().dType() == DataType::DIV)
+	while (programm.front().dType() == DataType::MUL || programm.front().dType() == DataType::DIV)
 	{
-		node_t op = programm.ShowFront();
-		programm.PopFront();
+		node_t op = programm.front();
+		programm.pop_front();
 		node_t* val2 = GetPower(programm);
 		if (op.dType() == DataType::MUL)
 		{
@@ -485,26 +484,26 @@ node_t* GetTerm(List<node_t>& programm)
 }
 
 
-node_t* GetPower(List<node_t>& programm)
+node_t* GetPower(std::deque<node_t>& programm)
 {
 	node_t* val = GetPrimaryExpression(programm);
-	if (programm.ShowFront().dType() == DataType::DEG)
+	if (programm.front().dType() == DataType::DEG)
 	{
-        programm.PopFront();
+        programm.pop_front();
 		node_t* val2 = GetPower(programm);
 		val = new node_t(NodeType::OPERATOR, DataType::DEG, "^", val, val2);
 	}
 	return val;
 }
 
-node_t* GetExpression(List<node_t>& programm)
+node_t* GetExpression(std::deque<node_t>& programm)
 {
 	node_t* val = GetTerm(programm);
 
-	while (programm.ShowFront().dType() == DataType::ADD || programm.ShowFront().dType() == DataType::SUB)
+	while (programm.front().dType() == DataType::ADD || programm.front().dType() == DataType::SUB)
 	{
-		node_t op = programm.ShowFront();
-		programm.PopFront();
+		node_t op = programm.front();
+		programm.pop_front();
 		node_t* val2 = GetTerm(programm);
 		if (op.dType() == DataType::ADD)
 		{
@@ -519,11 +518,11 @@ node_t* GetExpression(List<node_t>& programm)
 }
 
 
-node_t* GetPrimaryExpression(List<node_t>& programm)
+node_t* GetPrimaryExpression(std::deque<node_t>& programm)
 {
-	if (programm.ShowFront().dType() == DataType::OP_ROUND_BR)
+	if (programm.front().dType() == DataType::OP_ROUND_BR)
 	{
-		programm.PopFront();
+		programm.pop_front();
 		node_t* val = GetExpression(programm);
 		CheckClsRoundBr(programm);
 		return val;
@@ -531,22 +530,22 @@ node_t* GetPrimaryExpression(List<node_t>& programm)
 	else return GetRetFunc(programm);
 }
 
-node_t* GetVar(List<node_t>& programm)
+node_t* GetVar(std::deque<node_t>& programm)
 {
-	node_t var = programm.ShowFront();
-	if (programm.ShowFront().Type() == NodeType::WORD || programm.ShowFront().Type() == NodeType::WORD_WITH_NUMBERS)
+	node_t var = programm.front();
+	if (programm.front().Type() == NodeType::WORD || programm.front().Type() == NodeType::WORD_WITH_NUMBERS)
     {
-		node_t var = programm.ShowFront();
-        programm.PopFront();
-		if (programm.ShowFront().dType() == DataType::OP_SQUARE_BR) {
-			programm.PopFront();
+		node_t var = programm.front();
+        programm.pop_front();
+		if (programm.front().dType() == DataType::OP_SQUARE_BR) {
+			programm.pop_front();
 			node_t* index = GetExpression(programm);
-			if (programm.ShowFront().dType() != DataType::CLS_SQUARE_BR) {
-				std::cout << programm.ShowFront() << "\n";
+			if (programm.front().dType() != DataType::CLS_SQUARE_BR) {
+				std::cout << programm.front() << "\n";
 				std::cout << "Expected ']' not found\n";
 				exit(0);
 			};
-			programm.PopFront();
+			programm.pop_front();
 			node_t* access = new node_t(NodeType::BRACKET, DataType::ARRAY_ACCESS, "[]", index, nullptr);	
 			return new node_t(NodeType::ARRAY, DataType::ARRAY_ACCESS, var.Name(), access, nullptr);
 		} else {
@@ -555,20 +554,20 @@ node_t* GetVar(List<node_t>& programm)
 			return var_ptr;
 		}
     }
-	else if (programm.ShowFront().dType() == DataType::OP_SQUARE_BR) {
-		programm.PopFront();
+	else if (programm.front().dType() == DataType::OP_SQUARE_BR) {
+		programm.pop_front();
 		bool no_string = true;
 		node_t* operands = GetArgumentSequence(programm, no_string);
 		if (no_string = false) {
 			std::cout << "Arrays of string unsupported\n";
 			exit(0);
 		}
-		if (programm.ShowFront().dType() != DataType::CLS_SQUARE_BR) {
-			std::cout << programm.ShowFront() << "\n";
+		if (programm.front().dType() != DataType::CLS_SQUARE_BR) {
+			std::cout << programm.front() << "\n";
 			std::cout << "Expected ']' not found\n";
 			exit(0);
 		};
-		programm.PopFront();
+		programm.pop_front();
 		return new node_t(NodeType::ARRAY, DataType::ARRAY_INIT, "[]", operands, nullptr);	
 	} 
     else
@@ -579,12 +578,12 @@ node_t* GetVar(List<node_t>& programm)
 }
 
 
-node_t* GetNumber(List<node_t>& programm)
+node_t* GetNumber(std::deque<node_t>& programm)
 {
-    if (programm.ShowFront().Type() == NodeType::NUMBER)
+    if (programm.front().Type() == NodeType::NUMBER)
     {
-		node_t number = programm.ShowFront();
-        programm.PopFront();
+		node_t number = programm.front();
+        programm.pop_front();
         return new node_t(number);
     }
 	return nullptr;

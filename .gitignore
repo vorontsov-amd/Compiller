@@ -3,6 +3,6 @@
 .vscode
 *.bak
 *.exe
-ListDump/*
+std::vectorDump/*
 TreeDump/*
 build/*

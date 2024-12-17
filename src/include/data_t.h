@@ -161,7 +161,7 @@ class node_t
 public:
 	node_t();
 	node_t(const data_t& _data);
-	node_t(node_t& node);
+	node_t(const node_t& node);
 	node_t(const NodeType::nodeType _type);
 	node_t(const NodeType::nodeType N_type, const DataType::dataType D_type, char _value);
 	node_t(node_t* node);

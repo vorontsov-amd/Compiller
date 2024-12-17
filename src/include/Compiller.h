@@ -1,39 +1,13 @@
 #pragma once
 #include "Differentiator.h"
-#include "List.h"
 #include "main.h"
-#include "ByteArray.h"
-#include "Variable.h"
 #include "IRGenerator.hpp"
 #include <vector>
 
-
-struct ThreeIfStr
-{
-    const char* if_start;
-    const char* if_else;
-    const char* if_end;
-};
-
-struct TwoWhileStr
-{
-    const char* while_loop;
-    const char* while_end;
-};
-
-
-
-void TranslateToAsm(List<DifferTree>& proga, const char* out_name);
-const char* ProgrammName(List<DifferTree>& proga);
-const char* FrontFuncName(List<DifferTree>& proga);
-void WritePreamble(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
-void PreambleRodata(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
-void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
-void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code);
-std::vector<node_t*> CreateLstFuncNode(List<DifferTree>& proga);
-void TreeTranslate(DifferTree& function, const std::vector<node_t*>& functions, IRGenerator& gen);
-void VerifyDefFunc(node_t* function);
-void NumLocalVar(int& num_param, node_t* func);
+void TranslateToAsm(std::vector<DifferTree*>& proga, const char* out_name);
+void TranslateProcessing(std::vector<DifferTree*>& proga);
+std::vector<node_t*> CreateLstFuncNode(std::vector<DifferTree*>& proga);
+void TreeTranslate(DifferTree* function, const std::vector<node_t*>& functions, IRGenerator& gen);
 void DeclareStdlib(IRGenerator& gen);
 bool IsStdlibFunction(node_t* node);
 llvm::Value* TranslateCallStdlib(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
@@ -41,18 +15,15 @@ llvm::Value* TranslateArrayAccess(IRGenerator& gen, const std::vector<node_t*>& 
 void TranslateInitVariable(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 void TranslateInitArray(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 size_t GetArraySize(node_t* node);
+auto GetArgumentInfo(IRGenerator& gen, node_t* node);
 
 
 llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen);
 void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen);
-std::vector<variable> FillListVariables(node_t* node);
 llvm::Value* TranslateVar(node_t* node, IRGenerator& gen, bool load = true);
 llvm::Value* CreateConstantString(IRGenerator& gen, const std::string& literal, const std::string& literalName);
 
-void VerifyFunc(node_t* node);
 
-int NumParam(node_t* node);
-uint32_t SizeStackFrame(node_t* func, List<variable>* variables);
 llvm::Value* TransferParamToFunc(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* param, node_t* paramCallFunc);
 void TranslateOpSequence(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 void TranslateOp(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
@@ -63,10 +34,6 @@ llvm::Value* TransferParamToFunc(IRGenerator& gen, const std::vector<node_t*>& f
 void TranslateInit(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 void TranslateMov(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 llvm::Value* TranslateExp(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
-void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree>& proga, ByteArray& machine_code);
-void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, ByteArray& machine_code);
-void AppendConst(FILE* fasm, node_t* node, ByteArray& machine_code);
-void AppendStr(FILE* fasm, node_t* node, ByteArray& machine_code);
 void TranslateIf(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 llvm::Value* WriteCmpCondition(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* condition);
 void TranslateWhile(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
@@ -83,7 +50,6 @@ llvm::Value* TranslateInputMultipleParameters(IRGenerator& gen, node_t* node);
 llvm::Function* GetInputFunction(IRGenerator& gen);
 llvm::Value* InputOne(IRGenerator& gen, llvm::Value* variable);
 llvm::Value* TranslateRet(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
-void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, ByteArray& machine_code);
 llvm::Value* TranslatePow(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 llvm::Value* TranslateMul(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
 llvm::Value* TranslateAdd(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);

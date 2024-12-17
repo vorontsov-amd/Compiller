@@ -1,6 +1,7 @@
 #pragma once
 #include "Differentiator.h"
-#include "List.h"
+#include <vector>
+#include <deque>
 
 #define CHECK_STR_PTR(STR)                                                                                  \
 	if ((STR) == nullptr)                                                                                    \
@@ -10,38 +11,38 @@
     }                               
 
 
-List<DifferTree> GetGrammar(List<node_t>& programm);
-node_t* GetOpSequence(List<node_t>& programm);
-node_t* GetOperator(List<node_t>& programm);
-node_t* GetVar(List<node_t>& programm);
-node_t* GetExpression(List<node_t>& programm);
-node_t* GetTerm(List<node_t>& programm);
-node_t* GetPrimaryExpression(List<node_t>& programm);
-node_t* GetNumber(List<node_t>& programm);
-node_t* GetPower(List<node_t>& programm);
-node_t* GetIf(List<node_t>& programm);
-node_t* GetWhile(List<node_t>& programm);
-node_t* GetElse(List<node_t>& programm);
-node_t* GetAssign(List<node_t>& programm);
-void CheckClsRoundBr(List<node_t>& programm);
-void CheckOpRoundBr(List<node_t>& programm);
-node_t* GetConditions(List<node_t>& programm);
-node_t* GetInit(List<node_t>& programm);
-void CheckWord(List<node_t>& programm);
-node_t* GetRetFunc(List<node_t>& programm);
-node_t* GetCallFunc(List<node_t>& programm);
-node_t* GetFunc(List<node_t>& programm, node_t& func);
-node_t& GetDefFunc(List<node_t>& programm);
+std::vector<DifferTree*> GetGrammar(std::deque<node_t>& programm);
+node_t* GetOpSequence(std::deque<node_t>& programm);
+node_t* GetOperator(std::deque<node_t>& programm);
+node_t* GetVar(std::deque<node_t>& programm);
+node_t* GetExpression(std::deque<node_t>& programm);
+node_t* GetTerm(std::deque<node_t>& programm);
+node_t* GetPrimaryExpression(std::deque<node_t>& programm);
+node_t* GetNumber(std::deque<node_t>& programm);
+node_t* GetPower(std::deque<node_t>& programm);
+node_t* GetIf(std::deque<node_t>& programm);
+node_t* GetWhile(std::deque<node_t>& programm);
+node_t* GetElse(std::deque<node_t>& programm);
+node_t* GetAssign(std::deque<node_t>& programm);
+void CheckClsRoundBr(std::deque<node_t>& programm);
+void CheckOpRoundBr(std::deque<node_t>& programm);
+node_t* GetConditions(std::deque<node_t>& programm);
+node_t* GetInit(std::deque<node_t>& programm);
+void CheckWord(std::deque<node_t>& programm);
+node_t* GetRetFunc(std::deque<node_t>& programm);
+node_t* GetCallFunc(std::deque<node_t>& programm);
+node_t* GetFunc(std::deque<node_t>& programm, node_t& func);
+node_t& GetDefFunc(std::deque<node_t>& programm);
 char* Funcname(node_t& func);
-node_t* GetParamSequence(List<node_t>& programm);
-node_t* GetArgumentSequence(List<node_t>& programm, bool& no_string);
-void CheckValidFunc(List<node_t>& programm);
-void CheckClsShapeBr(List<node_t>& programm);
-void CheckOpShapeBr(List<node_t>& programm);
-node_t* GetNewVar(List<node_t>& programm);
-node_t* GetReturn(List<node_t>& programm);
-node_t* GetStr(List<node_t>& programm);
-node_t* GetPrimaryCondExpression(List<node_t>& programm);
-node_t* GetCondTerm(List<node_t>& programm);
-node_t* GetCondExpression(List<node_t>& programm);
+node_t* GetParamSequence(std::deque<node_t>& programm);
+node_t* GetArgumentSequence(std::deque<node_t>& programm, bool& no_string);
+void CheckValidFunc(std::deque<node_t>& programm);
+void CheckClsShapeBr(std::deque<node_t>& programm);
+void CheckOpShapeBr(std::deque<node_t>& programm);
+node_t* GetNewVar(std::deque<node_t>& programm);
+node_t* GetReturn(std::deque<node_t>& programm);
+node_t* GetStr(std::deque<node_t>& programm);
+node_t* GetPrimaryCondExpression(std::deque<node_t>& programm);
+node_t* GetCondTerm(std::deque<node_t>& programm);
+node_t* GetCondExpression(std::deque<node_t>& programm);
 

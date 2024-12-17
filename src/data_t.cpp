@@ -221,7 +221,7 @@ node_t::node_t(const NodeType::nodeType N_type, const DataType::dataType D_type,
 	right = _right;
 }
 
-node_t::node_t(node_t& node)
+node_t::node_t(const node_t& node)
 {
 	data = node.data;
 	type = node.type;

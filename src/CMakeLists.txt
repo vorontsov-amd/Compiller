@@ -1,22 +1,14 @@
 set(CPP_SOURCES
-    ByteArray.cpp
     Compiller.cpp
     data_t.cpp
     Differentiator.cpp
     lexical_analysis.cpp
     main.cpp
     Reading.cpp
-    Variable.cpp
 )
 
 include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
-
-# llvm_map_components_to_libnames(LLVM_LIBS
-#     Core
-#     Support
-#     IRReader
-# )
 
 add_executable(${PROJECT_NAME} ${CPP_SOURCES})
 target_include_directories(${PROJECT_NAME}

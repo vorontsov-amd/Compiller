@@ -11,175 +11,11 @@
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Intrinsics.h>
 
-void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
+void TranslateToAsm(std::vector<DifferTree*>& proga, const char* out_name)
 {
-    const char* programm_name = ProgrammName(proga);
-
-    FILE* fasm = fopen(programm_name, "w");
-
-    ByteArray machine_code;
-
-    machine_code.AppendElfHeader();
-    WritePreamble(fasm, proga, machine_code);
-    TranslateProcessing(fasm, proga,  machine_code);
-
-    // rewind(fasm);
-    // machine_code.Reset();
-
-    // machine_code.AppendElfHeader();
-    // WritePreamble(fasm, proga, machine_code);
-    // TranslateProcessing(fasm, proga,  machine_code);
-
-    // FILE* out = fopen(out_name, "wb");    
-    // assert(out);
-    // fwrite(machine_code.ByteCode(), 1, machine_code.Size(), out);
-    // fclose(fasm);
-    // fclose(out);
-    // delete[] programm_name;
+    TranslateProcessing(proga);
 }
 
-const char* ProgrammName(List<DifferTree>& proga)
-{
-    const char* name = FrontFuncName(proga);
-    char* fullname = new char[strlen(name) + 5];
-    strcpy(fullname, name);
-    strcat(fullname, ".asm");
-    return fullname;
-}
-
-const char* FrontFuncName(List<DifferTree>& proga)
-{
-    DifferTree main_function = proga.ShowFront();
-    node_t function = main_function.Root()->GetRight();
-    return function.Name();
-}
-
-void WritePreamble(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
-{
-    fputs("global _start\n", fasm);
-    fputs("extern dtoa, atod, pow\n\n", fasm);
-    PreambleData(fasm, proga, machine_code);
-    PreambleRodata(fasm, proga, machine_code);
-    fputs("section .text\n", fasm);
-}
-
-void PreambleRodata(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
-{
-    fputs("section .rodata\n", fasm);
-
-    uint64_t rodata_begin = machine_code.Size();
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.rodataStubs().p_offset = rodata_begin;
-        machine_code.rodataStubs().p_vaddp  = machine_code.e_point() + rodata_begin;
-    }
-
-    WriteConstant(fasm, DataType::CONSTANT, proga, machine_code);
-    WriteConstant(fasm, DataType::CONST_STR, proga, machine_code);
-
-
-    uint16_t rodata_end = machine_code.Size();
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.rodataStubs().p_size = rodata_end - rodata_begin;
-    }
-}
-
-void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
-{
-    fputs("section .data\n", fasm);
-
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.dataStubs().p_offset = machine_code.Size();
-        machine_code.dataStubs().p_vaddp = machine_code.e_point() + machine_code.Size();
-        machine_code.dataStubs().p_size = sizeof(double);
-    }
-
-    fputs("buffer: dq 0.0\n", fasm);
-    machine_code.Append(0.0);
-
-    fputs("str: times 32 db 0\n", fasm);
-    machine_code.Append(0U);
-    machine_code.Append(0U);
-    machine_code.Append(0U);
-    machine_code.Append(0U);
-}
-
-void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree>& proga, ByteArray& machine_code)
-{       
-    for (auto it = proga.begin(); it != proga.end(); ++it)
-    {
-        SearchConst(fasm, mode, it->Root(), machine_code);
-    }
-}
-
-void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, ByteArray& machine_code)
-{
-    if (node->GetLeft()) SearchConst(fasm, mode, node->GetLeft(), machine_code);
-    if (node->dType() == mode)
-    {
-        auto AppendData = AppendConst;
-        switch (mode)
-        {
-        case DataType::CONST_STR:
-            AppendData = AppendStr;
-            break;
-        case DataType::CONSTANT:
-            AppendData = AppendConst;
-            break;
-        default:
-            fprintf(stderr, "Incorrect Searching mode");
-            exit(EXIT_FAILURE);
-            break;
-        }
-        AppendData(fasm, node, machine_code);
-    }
-    if (node->GetRight()) SearchConst(fasm, mode, node->GetRight(), machine_code);
-}
-
-void AppendConst(FILE* fasm, node_t* node, ByteArray& machine_code)
-{    
-    static int num_const = 0;
-    if (machine_code.resetConstDeclCounter())
-    {
-        num_const = 0;
-    }
-
-    double number = node->Num();
-    std::string lbl_number = "const_" + std::to_string(num_const);
-
-    fprintf(fasm, "%s: dq %lf\n", lbl_number.c_str(), number);
-
-    machine_code.AddLabel(lbl_number);
-    machine_code.Append(number);
-
-    num_const++;
-}
-
-void AppendStr(FILE* fasm, node_t* node, ByteArray& machine_code)
-{
-    static int num_const = 0;
-    if (machine_code.resetStrDeclCounter())
-    {
-        num_const = 0;
-    }
-
-    const char* str = node->Name();
-    std::string str_mark = "str_" + std::to_string(num_const);
-
-    fprintf(fasm, "%s: db '", str_mark.c_str());
-    fputs(str, fasm);
-    fputs("'\n", fasm);
-
-    uint32_t str_len = strlen(str);
-
-    machine_code.AddLabel(str_mark);
-    machine_code.Append(str_len);
-    machine_code.Append(str, str_len);
-
-    num_const++;
-}
 
 void DeclareStdlib(IRGenerator& gen) {
     auto* voidType = llvm::Type::getVoidTy(gen.context);
@@ -201,70 +37,31 @@ void DeclareStdlib(IRGenerator& gen) {
     llvm::Function::Create(simPutPixelType, llvm::Function::ExternalLinkage, "simPutPixel", gen.module);
 }
 
-void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code)
+void TranslateProcessing(std::vector<DifferTree*>& proga)
 {
-    const std::vector<node_t*>& functions = CreateLstFuncNode(proga);
-    
+    auto&& functions = CreateLstFuncNode(proga);
 
     IRGenerator generator;
     DeclareStdlib(generator);
-
-    int size = proga.Size();
-    for (int i = 0; i < size; i++)
-    {
-        DifferTree function = proga.ShowFront();
-        TreeTranslate(function, functions, generator);
-        proga.PopFront();
+    for (auto&& functionTree : proga) {
+        TreeTranslate(functionTree, functions, generator);
     }
-
     generator.dump();
 }
 
-std::vector<node_t*> CreateLstFuncNode(List<DifferTree>& proga)
+std::vector<node_t*> CreateLstFuncNode(std::vector<DifferTree*>& proga)
 {
-    std::vector<node_t*> lst;
-
-    for (auto it = proga.begin(); it != proga.end(); ++it)
-    {        
-        lst.push_back(it->Root()->GetRight());
+    std::vector<node_t*> res;
+    for (auto&& functionTree : proga) {
+        res.push_back(functionTree->Root()->GetRight());
     }
-
-    return lst;
+    return res;
 }
 
-void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, ByteArray& machine_code)
-{   
-    const char* programm_name = FrontFuncName(tree);
-    
-    fprintf(fasm, "_start:\n");
-    fprintf(fasm, "\t\tfinit\n");
-    fprintf(fasm, "\t\tcall\t%s\n", programm_name);
 
-    fprintf(fasm, "\t\tmov\t\trax, 60\n");
-    fprintf(fasm, "\t\txor\t\trdi, rdi\n");
-    fprintf(fasm, "\t\tsyscall\n");
-
-    machine_code.AppendCmd(CMD::FINIT, 3);
-    machine_code.AppendCallFunc(programm_name);
-    machine_code.AppendCmd(CMD::MOV_RAX_60, 7);
-    machine_code.AppendCmd(CMD::XOR_RDI_RDI, 3);
-    machine_code.AppendCmd(CMD::SYSCALL, 2);
-}
-
-void VerifyDefFunc(node_t* function)
+void TreeTranslate(DifferTree* function, const std::vector<node_t*>& functions, IRGenerator& gen)
 {
-    if (function->dType() != DataType::DEFINE)
-    {
-        std::cout << *function << "\n";
-        fprintf(stderr, "Error reading the function tree\n");
-        exit(EXIT_FAILURE);
-    }
-}
-
-void TreeTranslate(DifferTree& function, const std::vector<node_t*>& functions, IRGenerator& gen)
-{
-    node_t* func = function.Root();
-    VerifyDefFunc(func);
+    node_t* func = function->Root();
 
     func = func->GetRight();
     auto* llvm_function = WriteFuncProlog(func, gen);
@@ -275,20 +72,46 @@ void TreeTranslate(DifferTree& function, const std::vector<node_t*>& functions, 
     WriteFuncEpilog(llvm_function, gen);
 }
 
+auto GetArgumentInfo(IRGenerator& gen, node_t* node)
+{
+    std::vector<llvm::Type*> variables;
+    std::vector<std::string> names;
+
+    if (node->GetLeft())
+    {
+        node = node->GetLeft();
+        while (node->dType() == DataType::COMMA)
+        {
+            auto* var_ptr = node->GetRight();
+            if (var_ptr->dType() == DataType::NEW_VAR) {
+                variables.push_back(gen.builder.getDoubleTy());
+                names.push_back(var_ptr->Name());
+            }
+            else
+            {
+                variables.push_back(gen.builder.getDoubleTy()->getPointerTo());
+                names.push_back(var_ptr->Name());
+            }
+        }
+        if (node->dType() == DataType::NEW_VAR) {
+            variables.push_back(gen.builder.getDoubleTy());
+            names.push_back(node->Name());
+        }
+        else
+        {
+            variables.push_back(gen.builder.getDoubleTy()->getPointerTo());
+            names.push_back(node->Name());
+        }
+    }
+
+    return std::make_tuple(variables, names);
+}
+
 llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen) {
     using namespace llvm;
 
     auto funcName = func->Name();
-    auto variables = FillListVariables(func);
-    std::vector<Type*> argTypes;
-    for (auto variable : variables) {
-        if (variable.IsLink()) {
-            argTypes.push_back(Type::getDoubleTy(gen.context)->getPointerTo());
-        } else {
-            argTypes.push_back(Type::getDoubleTy(gen.context));
-        }
-    }
-
+    auto [argTypes, argNames] = GetArgumentInfo(gen, func);
     auto* funcType = FunctionType::get(Type::getDoubleTy(gen.context), argTypes, false);
 
 
@@ -299,7 +122,7 @@ llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen) {
 
     unsigned idx = 0;
     for (auto&& arg : llvmFunc->args()) {
-        arg.setName(variables[idx].Name());
+        arg.setName(argNames[idx]);
         ++idx;
     }
 
@@ -308,7 +131,6 @@ llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen) {
     gen.builder.SetInsertPoint(entryBlock);
 
     // Copy arguments to stack
-    idx = 0;
     for (auto&& arg : llvmFunc->args()) {
         auto localVarName = arg.getName().str() + "_local";
         auto* localVar = gen.builder.CreateAlloca(arg.getType(), nullptr, localVarName);
@@ -327,11 +149,7 @@ llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen) {
 void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen) {
     using namespace llvm;
     
-    // auto* returnBlock = BasicBlock::Create(gen.context, "return", llvmFunc);
-    // gen.builder.SetInsertPoint(returnBlock);
-
     // Copy updated local variables back to their original locations
-    unsigned idx = 0;
     for (auto&& arg : llvmFunc->args()) {
         if (arg.getType()->isPointerTy()) {
             auto* updatedValuePtr = gen.local_vars[arg.getName().str()];
@@ -344,90 +162,6 @@ void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen) {
         auto zero = CreateFloatConstant(gen, 0.0);
         gen.builder.CreateRet(zero);
     }
-}
-
-std::vector<variable> FillListVariables(node_t* node)
-{
-    VerifyFunc(node);
-    std::vector<variable> variables;
-
-    if (node->GetLeft())
-    {
-        int offset = NumParam(node) * sizeof(double);
-        node = node->GetLeft();
-        while (node->dType() == DataType::COMMA)
-        {
-            node_t* var_ptr = node->GetRight();
-            if (var_ptr->dType() == DataType::NEW_VAR)
-            {
-                var_ptr = var_ptr->GetRight();
-                variable var(var_ptr, false, offset);
-                variables.push_back(var);
-            }
-            else
-            {
-                variable var(var_ptr, true, offset);
-                variables.push_back(var);
-            }
-            offset -= sizeof(double);
-            node = node->GetLeft();
-        }
-        if (node->dType() == DataType::NEW_VAR)
-        {
-            node = node->GetRight();
-            variable var(node, false, offset);
-            variables.push_back(var);
-        }
-        else
-        {
-            variable var(node, true, offset);
-            variables.push_back(var);
-        }
-    }
-
-    std::reverse(variables.begin(), variables.end());
-    return variables;
-}
-
-int NumParam(node_t* node)
-{
-    int num_param = 0;
-    while (node->GetLeft())
-    {
-        num_param++;
-        node = node->GetLeft();
-    }
-    return num_param;
-}
-
-void NumLocalVar(int& num_param, node_t* node)
-{    
-    if (node->dType() == DataType::INITIALIZATE)
-    {
-        num_param++;
-        return;
-    }
-    if (node->GetLeft()) NumLocalVar(num_param, node->GetLeft());
-    if (node->GetRight()) NumLocalVar(num_param, node->GetRight());
-
-}
-
-void VerifyFunc(node_t* node)
-{
-    if (node->dType() != DataType::FUNC)
-    {
-        std::cout << node << "\n";
-        fprintf(stderr, "Error reading function parametrs");
-        exit(EXIT_FAILURE);
-    }
-}
-
-uint32_t SizeStackFrame(node_t* func, List<variable>* variables)
-{
-    int num_variables = 0 ;
-    NumLocalVar(num_variables, func);
-    num_variables += variables->Size();
-    return num_variables * sizeof(double);
 }
 
 
@@ -492,18 +226,7 @@ llvm::Function* GetOrCreateFunction(IRGenerator& gen, node_t* func) {
 
     Function* targetFunc = gen.module.getFunction(funcName);
     if (!targetFunc) {
-
-        auto variables = FillListVariables(func);
-
-        std::vector<Type*> argTypes;
-        for (auto variable : variables) {
-            if (variable.IsLink()) {
-                argTypes.push_back(Type::getDoubleTy(gen.context)->getPointerTo());
-            } else {
-                argTypes.push_back(Type::getDoubleTy(gen.context));
-            }
-        }
-
+        auto [argTypes, argNames] = GetArgumentInfo(gen, func);
         auto* funcType = FunctionType::get(Type::getDoubleTy(gen.context), argTypes, false);
         targetFunc = Function::Create(funcType, Function::ExternalLinkage, funcName, &gen.module);
     }
@@ -574,7 +297,7 @@ node_t* SearchCallFunc(const std::string& funcName, const std::vector<node_t*>& 
             return funcNode;
         }
     }
-    throw std::runtime_error("Function " + funcName + " not found in list of declared functions!");
+    throw std::runtime_error("Function " + funcName + " not found in std::vector of declared functions!");
 }
 
 llvm::Value* TransferParamToFunc(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* param, node_t* paramCallFunc) {

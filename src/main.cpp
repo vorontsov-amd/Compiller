@@ -9,10 +9,10 @@ int main(int argc, char const *argv[])
     const char* filename_code = argv[1];
     const char* filename_text = argv[2];
 
-    List<node_t> lst = ListScan(filename_text);
+    auto&& lst = Scan(filename_text);
 	// lst.GraphDump();
 
-	List<DifferTree> tree = GetGrammar(lst);
+	auto&& tree = GetGrammar(lst);
     ProgrammDump(tree);
     // return 0;
 
@@ -45,12 +45,12 @@ void VerifyMainArgument(int argc, const char* argv[])
     }
 }
 
-void ProgrammDump(List<DifferTree> tree)
+void ProgrammDump(std::vector<DifferTree*>& programm)
 {
-    for (auto it = tree.begin(); it != tree.end(); ++it)
+    for (auto&& functionTree : programm)
     {
-        const char* funcname = it->Root()->GetRight()->Name();
-        it->GraphDump(funcname);
+        auto funcname = functionTree->Root()->GetRight()->Name();
+        functionTree->GraphDump(funcname);
     }
 }
 
@@ -64,7 +64,7 @@ size_t Filesize(FILE *stream)
     return buff.st_size;
 }
 
-List<node_t> ListScan(const char* filename)
+std::deque<node_t> Scan(const char* filename)
 {
     FILE* stream = fopen(filename, "r");
 	

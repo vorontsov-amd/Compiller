@@ -1,11 +1,11 @@
 #include "lexical_analysis.h"
 
-List<node_t> AnalysProcessing (char* programm, long long length)
+std::deque<node_t> AnalysProcessing (char* programm, long long length)
 {
     CHECK_STR_PTR(programm);
     char * save_programm = programm;
 
-    List<node_t> lexems;
+    std::deque<node_t> lexems;
 
     char* word_ptr = new char[length];
     for (int str_len = 0; (str_len = sscanf(programm, "%s",word_ptr)) != -1; programm += (strlen(word_ptr) + 1))
@@ -13,7 +13,7 @@ List<node_t> AnalysProcessing (char* programm, long long length)
         WordAnalysis(word_ptr, lexems);
     }
     node_t term(NodeType::TERMINATED);
-    lexems.PushBack(term);
+    lexems.push_back(term);
 
     delete[] word_ptr;
     delete[] save_programm;
@@ -21,31 +21,31 @@ List<node_t> AnalysProcessing (char* programm, long long length)
 }
 
 
-void WordAnalysis(char* word_ptr, List<node_t>& lexems)
+void WordAnalysis(char* word_ptr, std::deque<node_t>& lexems)
 {
     CHECK_STR_PTR(word_ptr);
 
     if (isNumber(word_ptr))
     {
         node_t number(NodeType::NUMBER, DataType::CONSTANT, atof(word_ptr)); 
-        lexems.PushBack(number);
+        lexems.push_back(number);
     }
     else if (symbol* op = isOperator(word_ptr))
     {
         node_t oper(NodeType::OPERATOR, op->type, op->ch);
-        lexems.PushBack(oper);
+        lexems.push_back(oper);
         delete op;
     }
     else if (symbol* br = isBracket(word_ptr))
     {
         node_t bracket(NodeType::BRACKET, br->type, br->ch);
-        lexems.PushBack(bracket);
+        lexems.push_back(bracket);
         delete br;
     }
     else if (isWord(word_ptr))
     {
         node_t word(NodeType::WORD, DataType::UNKNOWN, word_ptr);
-        lexems.PushBack(word);
+        lexems.push_back(word);
     }
     else 
     {        
@@ -56,7 +56,7 @@ void WordAnalysis(char* word_ptr, List<node_t>& lexems)
         else
         {
             node_t word_with_number(NodeType::WORD_WITH_NUMBERS, DataType::UNKNOWN, word_ptr);
-            lexems.PushBack(word_with_number);
+            lexems.push_back(word_with_number);
         }
     }
 }
@@ -97,7 +97,7 @@ char* isSubstring(char* str)
 
 #undef STRSTR
 
-void SubstringAnalysis(char* word_ptr, char* ch, List<node_t>& lexems)
+void SubstringAnalysis(char* word_ptr, char* ch, std::deque<node_t>& lexems)
 {
     CHECK_STR_PTR(word_ptr);
     CHECK_STR_PTR(ch);

@@ -1,6 +1,6 @@
 #pragma once
-#include "List.h"
 #include "data_t.h"
+#include <deque>
 
 #define CHECK_STR_PTR(STR)                                                                                  \
 	if ((STR) == nullptr)                                                                                    \
@@ -33,7 +33,7 @@ symbol* isOperator(char* str);
 
 template <unsigned N> int SearchOperator(char array[][N], int length, char* element);
 symbol* isBracket(char* str);
-List<node_t> AnalysProcessing (char* programm, long long length);
-void SubstringAnalysis(char* word_ptr, char* ch, List<node_t>& lexems);
-void WordAnalysis(char* word_ptr, List<node_t>& lexems);
+std::deque<node_t> AnalysProcessing (char* programm, long long length);
+void SubstringAnalysis(char* word_ptr, char* ch, std::deque<node_t>& lexems);
+void WordAnalysis(char* word_ptr, std::deque<node_t>& lexems);
 char* isSubstring(char* str);
