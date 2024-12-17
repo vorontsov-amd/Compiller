@@ -540,7 +540,7 @@ node_t* GetVar(List<node_t>& programm)
         programm.PopFront();
 		if (programm.ShowFront().dType() == DataType::OP_SQUARE_BR) {
 			programm.PopFront();
-			node_t* index = GetNumber(programm);
+			node_t* index = GetExpression(programm);
 			if (programm.ShowFront().dType() != DataType::CLS_SQUARE_BR) {
 				std::cout << programm.ShowFront() << "\n";
 				std::cout << "Expected ']' not found\n";

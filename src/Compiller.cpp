@@ -340,8 +340,10 @@ void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen) {
         }
     }
 
-    auto zero = CreateFloatConstant(gen, 0.0);
-    gen.builder.CreateRet(zero);
+    if (!gen.builder.GetInsertBlock()->getTerminator()) {
+        auto zero = CreateFloatConstant(gen, 0.0);
+        gen.builder.CreateRet(zero);
+    }
 }
 
 std::vector<variable> FillListVariables(node_t* node)
@@ -677,6 +679,17 @@ void TranslateMov(IRGenerator& gen, const std::vector<node_t*>& functions, node_
 
 llvm::Value* TranslateRet(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
     node = node->GetRight();
+
+    // Copy updated local variables back to their original locations
+    unsigned idx = 0;
+    for (auto&& arg : gen.current_function->args()) {
+        if (arg.getType()->isPointerTy()) {
+            auto* updatedValuePtr = gen.local_vars[arg.getName().str()];
+            auto* updatedValue = gen.builder.CreateLoad(llvm::Type::getDoubleTy(gen.context), updatedValuePtr);
+            gen.builder.CreateStore(updatedValue, &arg);
+        }
+    }
+
     llvm::Value* returnValue = TranslateExp(gen, functions, node);
     return gen.builder.CreateRet(returnValue);
 }
