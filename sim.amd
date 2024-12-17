@@ -1,0 +1,15 @@
+define main() {
+    simInit();
+    var step = 0;
+    var y = 0;
+    var x = 0;
+    while (step < 1000) {
+        while (y < 1920) {
+            while (x < 1080) {
+                simPutPixel(x, y, 0xFF000000 + x * y * step);
+            };
+        };
+        simFlush();
+    };
+    simExit();
+}

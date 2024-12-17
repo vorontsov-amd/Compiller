@@ -181,12 +181,33 @@ void AppendStr(FILE* fasm, node_t* node, ByteArray& machine_code)
     num_const++;
 }
 
+void DeclareStdlib(IRGenerator& gen) {
+    auto* voidType = llvm::Type::getVoidTy(gen.context);
+    auto* intType = llvm::Type::getInt32Ty(gen.context);
+    
+    auto* simFlushType = llvm::FunctionType::get(voidType, false);
+    llvm::Function::Create(simFlushType, llvm::Function::ExternalLinkage, "simFlush", gen.module);
+
+    auto* simInitType = llvm::FunctionType::get(voidType, false);
+    llvm::Function::Create(simFlushType, llvm::Function::ExternalLinkage, "simInit", gen.module);
+
+    auto* simExitType = llvm::FunctionType::get(voidType, false);
+    llvm::Function::Create(simFlushType, llvm::Function::ExternalLinkage, "simExit", gen.module);
+
+    auto* simClearWindowType = llvm::FunctionType::get(voidType, false);
+    llvm::Function::Create(simFlushType, llvm::Function::ExternalLinkage, "simClearWindow", gen.module);
+
+    auto* simPutPixelType = llvm::FunctionType::get(voidType, {intType, intType, intType}, false);
+    llvm::Function::Create(simPutPixelType, llvm::Function::ExternalLinkage, "simPutPixel", gen.module);
+}
+
 void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code)
 {
     const std::vector<node_t*>& functions = CreateLstFuncNode(proga);
     
 
     IRGenerator generator;
+    DeclareStdlib(generator);
 
     int size = proga.Size();
     for (int i = 0; i < size; i++)
@@ -362,6 +383,7 @@ std::vector<variable> FillListVariables(node_t* node)
         }
     }
 
+    std::reverse(variables.begin(), variables.end());
     return variables;
 }
 
@@ -487,7 +509,41 @@ llvm::Function* GetOrCreateFunction(IRGenerator& gen, node_t* func) {
     return targetFunc;
 }
 
+bool IsStdlibFunction(node_t* node) {
+    std::string functionName = node->Name();
+    return functionName == "simPutPixel" ||
+           functionName == "simClearWindow" ||
+           functionName == "simFlush" ||
+           functionName == "simInit" ||
+           functionName == "simExit";
+}
+
+llvm::Value* TranslateCallStdlib(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
+    std::string functionName = node->Name();
+    auto* llvmFunction = gen.module.getFunction(functionName);
+    
+    // Collect parameters
+    std::vector<llvm::Value*> args;
+    node = node->GetRight();
+    if (node) {
+        while (node->dType() == DataType::COMMA) {
+            auto* arg = TranslateExp(gen, functions, node->GetRight());
+            args.push_back(gen.builder.CreateFPToSI(arg, gen.builder.getInt32Ty()));
+            node = node->GetLeft();
+        }
+        auto* arg = TranslateExp(gen, functions, node);
+        args.push_back(gen.builder.CreateFPToSI(arg, gen.builder.getInt32Ty()));
+    }
+
+    std::reverse(args.begin(), args.end());
+    return gen.builder.CreateCall(llvmFunction, args);
+}
+
 llvm::Value* TranslateCallFunc(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
+    if (IsStdlibFunction(node)) {
+        return TranslateCallStdlib(gen, functions, node);
+    }
+    
     const std::string callFuncName = node->Name();
     node = node->GetRight();
 
@@ -704,9 +760,9 @@ void TranslateWhile(IRGenerator& gen, const std::vector<node_t*>& functions, nod
 
     // Generate unique names for basic blocks
     auto* function = gen.current_function;
-    auto* testBlock = BasicBlock::Create(gen.context, "while_test" + function->size(), function);
-    auto* loopBlock = BasicBlock::Create(gen.context, "while_loop" + function->size(), function);
-    auto* endBlock  = BasicBlock::Create(gen.context, "while_end"  + function->size(), function);
+    auto* testBlock = BasicBlock::Create(gen.context, "while_test" + std::to_string(function->size()), function);
+    auto* loopBlock = BasicBlock::Create(gen.context, "while_loop" + std::to_string(function->size()), function);
+    auto* endBlock  = BasicBlock::Create(gen.context, "while_end"  + std::to_string(function->size()), function);
 
     // Jump to the test block
     gen.builder.CreateBr(testBlock);
@@ -774,15 +830,16 @@ void TranslateIf(IRGenerator& gen, const std::vector<node_t*>& functions, node_t
     using namespace llvm;
 
     // Extract condition and branches
-    auto* condition = node->GetLeft();
-    auto* trueBranch = node->GetRight()->GetLeft();
-    auto* falseBranch = node->GetRight()->GetRight();
+    bool hasElseBlock = node->GetRight()->dType() == DataType::ELSE; 
+    auto* condition   = node->GetLeft();
+    auto* trueBranch  = hasElseBlock ? node->GetRight()->GetLeft()  : node->GetRight();
+    auto* falseBranch = hasElseBlock ? node->GetRight()->GetRight() : nullptr;
 
     // Create blocks
     auto* function = gen.current_function;
-    auto* if_true_block = BasicBlock::Create(gen.context, "if_true_" + function->size(), function);
-    auto* if_false_block = BasicBlock::Create(gen.context, "if_false_" + function->size(), function);
-    auto* if_end_block = BasicBlock::Create(gen.context, "if_end_" + function->size(), function);
+    auto* if_true_block = BasicBlock::Create(gen.context, "if_true_" + std::to_string(function->size()), function);
+    auto* if_false_block = BasicBlock::Create(gen.context, "if_false_" + std::to_string(function->size()), function);
+    auto* if_end_block = BasicBlock::Create(gen.context, "if_end_" + std::to_string(function->size()), function);
 
     // Translate condition
     auto* condition_value = TranslateCondition(gen, functions, condition);
@@ -793,15 +850,21 @@ void TranslateIf(IRGenerator& gen, const std::vector<node_t*>& functions, node_t
     // True branch
     gen.builder.SetInsertPoint(if_true_block);
     TranslateOpSequence(gen, functions, trueBranch);
-    gen.builder.CreateBr(if_end_block);
+    if (!gen.builder.GetInsertBlock()->getTerminator()) {
+        gen.builder.CreateBr(if_end_block);
+    }
 
-    // Add false block to the function
+    // False branch
     gen.builder.SetInsertPoint(if_false_block);
-    if (falseBranch) {
+    if (falseBranch && falseBranch->dType() == DataType::IF) {
+        TranslateIf(gen, functions, falseBranch);
+    } else {
         TranslateOpSequence(gen, functions, falseBranch);
     }
-    gen.builder.CreateBr(if_end_block);
-
+    if (!gen.builder.GetInsertBlock()->getTerminator()) {
+        gen.builder.CreateBr(if_end_block);
+    }
+    
     // End block
     gen.builder.SetInsertPoint(if_end_block);
 }

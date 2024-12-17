@@ -34,6 +34,10 @@ std::vector<node_t*> CreateLstFuncNode(List<DifferTree>& proga);
 void TreeTranslate(DifferTree& function, const std::vector<node_t*>& functions, IRGenerator& gen);
 void VerifyDefFunc(node_t* function);
 void NumLocalVar(int& num_param, node_t* func);
+void DeclareStdlib(IRGenerator& gen);
+bool IsStdlibFunction(node_t* node);
+llvm::Value* TranslateCallStdlib(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
+
 
 llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen);
 void WriteFuncEpilog(llvm::Function* llvmFunc, IRGenerator& gen);
