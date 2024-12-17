@@ -538,10 +538,39 @@ node_t* GetVar(List<node_t>& programm)
     {
 		node_t var = programm.ShowFront();
         programm.PopFront();
-        node_t* var_ptr = new node_t(var);
-		var_ptr->SetDtype(DataType::VARIABLE);
-		return var_ptr;
+		if (programm.ShowFront().dType() == DataType::OP_SQUARE_BR) {
+			programm.PopFront();
+			node_t* index = GetNumber(programm);
+			if (programm.ShowFront().dType() != DataType::CLS_SQUARE_BR) {
+				std::cout << programm.ShowFront() << "\n";
+				std::cout << "Expected ']' not found\n";
+				exit(0);
+			};
+			programm.PopFront();
+			node_t* access = new node_t(NodeType::BRACKET, DataType::ARRAY_ACCESS, "[]", index, nullptr);	
+			return new node_t(NodeType::ARRAY, DataType::ARRAY_ACCESS, var.Name(), access, nullptr);
+		} else {
+			node_t* var_ptr = new node_t(var);
+			var_ptr->SetDtype(DataType::VARIABLE);
+			return var_ptr;
+		}
     }
+	else if (programm.ShowFront().dType() == DataType::OP_SQUARE_BR) {
+		programm.PopFront();
+		bool no_string = true;
+		node_t* operands = GetArgumentSequence(programm, no_string);
+		if (no_string = false) {
+			std::cout << "Arrays of string unsupported\n";
+			exit(0);
+		}
+		if (programm.ShowFront().dType() != DataType::CLS_SQUARE_BR) {
+			std::cout << programm.ShowFront() << "\n";
+			std::cout << "Expected ']' not found\n";
+			exit(0);
+		};
+		programm.PopFront();
+		return new node_t(NodeType::ARRAY, DataType::ARRAY_INIT, "[]", operands, nullptr);	
+	} 
     else
 	{ 
 		return GetNumber(programm);

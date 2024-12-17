@@ -260,6 +260,9 @@ symbol* isBracket(char* str)
         case 2:
             br->type = DataType::OP_SQUARE_BR;
             break;
+        case 3:
+            br->type = DataType::CLS_SQUARE_BR;
+            break;
         case 4:
             br->type = DataType::OP_ROUND_BR;
             break;

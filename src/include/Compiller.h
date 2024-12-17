@@ -37,6 +37,10 @@ void NumLocalVar(int& num_param, node_t* func);
 void DeclareStdlib(IRGenerator& gen);
 bool IsStdlibFunction(node_t* node);
 llvm::Value* TranslateCallStdlib(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
+llvm::Value* TranslateArrayAccess(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
+void TranslateInitVariable(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
+void TranslateInitArray(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node);
+size_t GetArraySize(node_t* node);
 
 
 llvm::Function* WriteFuncProlog(node_t* func, IRGenerator& gen);

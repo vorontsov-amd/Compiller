@@ -6,8 +6,10 @@ define main() {
     while (step < 1000) {
         while (y < 1920) {
             while (x < 1080) {
-                simPutPixel(x, y, 0xFF000000 + x * y * step);
+                simPutPixel(x, y, 0xFF000000 + x * y * step);\
+                x = x + 1;
             };
+            y = y + 1;
         };
         simFlush();
     };

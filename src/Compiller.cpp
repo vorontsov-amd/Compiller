@@ -598,13 +598,63 @@ void TranslateInit(IRGenerator& gen, const std::vector<node_t*>& functions, node
         gen.local_vars[varName] = alloca;
     } 
     else if (node->dType() == DataType::MOV) {
-        std::string varName = node->GetLeft()->Name();
-        llvm::AllocaInst* alloca = gen.builder.CreateAlloca(llvm::Type::getDoubleTy(gen.context), nullptr, varName);
-        gen.local_vars[varName] = alloca;
-        TranslateMov(gen, functions, node);
+        if (node->GetRight()->dType() == DataType::ARRAY_INIT) {
+            TranslateInitArray(gen, functions, node);
+        } else {
+            TranslateInitVariable(gen, functions, node);
+        }
     }
 }
 
+void TranslateInitArray(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
+    assert(node->dType() == DataType::MOV);
+    auto* variable = node->GetLeft();
+    auto* array    = node->GetRight();
+    
+    auto  arraySize = GetArraySize(array);
+    auto* arrayType = llvm::ArrayType::get(gen.builder.getDoubleTy(), arraySize);
+    auto* arrayAlloca = gen.builder.CreateAlloca(arrayType, nullptr, variable->Name());
+    gen.local_vars[variable->Name()] = arrayAlloca;
+
+    unsigned i = arraySize - 1;
+    node = array->GetLeft();
+    std::vector<std::pair<llvm::Value*, llvm::Value*>> values;
+    while (node && node->dType() == DataType::COMMA) {
+        auto* index = llvm::ConstantInt::get(gen.builder.getInt32Ty(), i--);
+        auto* value = TranslateExp(gen, functions, node->GetRight());
+        values.emplace_back(index, value);
+        node = node->GetLeft();
+    }
+    auto* index = llvm::ConstantInt::get(gen.builder.getInt32Ty(), i);
+    auto* value = TranslateExp(gen, functions, node);
+    values.emplace_back(index, value);
+
+    std::reverse(values.begin(), values.end());
+    for (auto&& [index, value] : values) {
+        auto* elementPtr = gen.builder.CreateGEP(
+            arrayType, arrayAlloca,
+            {llvm::ConstantInt::get(llvm::Type::getInt32Ty(gen.context), 0), index}
+        );
+        gen.builder.CreateStore(value, elementPtr);
+    }
+}
+
+size_t GetArraySize(node_t* node) {
+    node = node->GetLeft();
+    size_t length = 0;
+    while (node && node->dType() == DataType::COMMA) {
+        node = node->GetLeft();
+        length++;
+    }
+    return ++length;
+}
+
+void TranslateInitVariable(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
+    std::string varName = node->GetLeft()->Name();
+    llvm::AllocaInst* alloca = gen.builder.CreateAlloca(llvm::Type::getDoubleTy(gen.context), nullptr, varName);
+    gen.local_vars[varName] = alloca;
+    TranslateMov(gen, functions, node);
+}
 
 void TranslateMov(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
     
@@ -951,11 +1001,52 @@ llvm::Value* TranslateExp(IRGenerator& gen, const std::vector<node_t*>& function
         return TranslateCallSin(gen, functions, node);
     case DataType::COS:
         return TranslateCallCos(gen, functions, node);  
+    case DataType::ARRAY_ACCESS:
+        return TranslateArrayAccess(gen, functions, node);
     default:
         break;
     }
 
     return nullptr;
+}
+
+llvm::Value* TranslateArrayAccess(IRGenerator& gen, const std::vector<node_t*>& functions, node_t* node) {
+    auto* var = node;
+    auto* array = node->GetLeft();
+    auto* index = array->GetLeft();
+
+    auto it = gen.local_vars.find(var->Name());
+    if (it == gen.local_vars.end()) {
+        std::cout << termcolor::red << "Error: " << termcolor::reset
+                  << "array '" << var->Name() << "' is used before it is declared" << std::endl;
+        exit(0);
+    }
+
+    auto* arrayAlloca = it->second;
+    auto* arrayType = llvm::dyn_cast<llvm::AllocaInst>(arrayAlloca)->getAllocatedType();
+    if (!arrayType->isArrayTy()) {
+        std::cout << termcolor::red << "Error: " << termcolor::reset
+                  << "Variavle '" << var->Name() << "' is not array" << std::endl;
+        exit(0);        
+    }
+
+    auto* indexValue = TranslateExp(gen, functions, index);
+    if (indexValue->getType()->isDoubleTy()) {
+        indexValue = gen.builder.CreateFPToUI(indexValue, llvm::Type::getInt32Ty(gen.context));
+    }
+
+    auto* elementPtr = gen.builder.CreateGEP(
+        arrayType,
+        arrayAlloca,
+        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(gen.context), 0), indexValue}
+    );
+
+    auto* elementValue = gen.builder.CreateLoad(
+        arrayType->getArrayElementType(),
+        elementPtr
+    );
+
+    return elementValue;
 }
 
 llvm::Value* TranslateVar(node_t* node, IRGenerator& gen, bool load) {

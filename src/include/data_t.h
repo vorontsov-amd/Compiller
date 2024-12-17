@@ -60,6 +60,8 @@ namespace DataType
 		SIN,
 		COS,
 		LOG,
+		ARRAY_INIT,
+		ARRAY_ACCESS
 	};
 }
 
@@ -71,6 +73,7 @@ namespace NodeType
 		NUMBER,
 		WORD,
 		OPERATOR,
+		ARRAY,
 		BRACKET,
 		WORD_WITH_NUMBERS,
 		END_OP,
