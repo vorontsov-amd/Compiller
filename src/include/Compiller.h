@@ -6,30 +6,11 @@
 #include "Variable.h"
 #include "IRGenerator.hpp"
 #include <vector>
+#include <boost/program_options.hpp>
 
+namespace po = boost::program_options;
 
-struct ThreeIfStr
-{
-    const char* if_start;
-    const char* if_else;
-    const char* if_end;
-};
-
-struct TwoWhileStr
-{
-    const char* while_loop;
-    const char* while_end;
-};
-
-
-
-void TranslateToAsm(List<DifferTree>& proga, const char* out_name);
-const char* ProgrammName(List<DifferTree>& proga);
-const char* FrontFuncName(List<DifferTree>& proga);
-void WritePreamble(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
-void PreambleRodata(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
-void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code);
-void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code);
+void TranslateProcessing(List<DifferTree> proga, const po::variables_map& vm);
 std::vector<node_t*> CreateLstFuncNode(List<DifferTree>& proga);
 void TreeTranslate(DifferTree& function, const std::vector<node_t*>& functions, IRGenerator& gen);
 void VerifyDefFunc(node_t* function);

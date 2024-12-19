@@ -10,176 +10,9 @@
 #include <llvm/IR/Value.h>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Intrinsics.h>
-
-void TranslateToAsm(List<DifferTree>& proga, const char* out_name)
-{
-    const char* programm_name = ProgrammName(proga);
-
-    FILE* fasm = fopen(programm_name, "w");
-
-    ByteArray machine_code;
-
-    machine_code.AppendElfHeader();
-    WritePreamble(fasm, proga, machine_code);
-    TranslateProcessing(fasm, proga,  machine_code);
-
-    // rewind(fasm);
-    // machine_code.Reset();
-
-    // machine_code.AppendElfHeader();
-    // WritePreamble(fasm, proga, machine_code);
-    // TranslateProcessing(fasm, proga,  machine_code);
-
-    // FILE* out = fopen(out_name, "wb");    
-    // assert(out);
-    // fwrite(machine_code.ByteCode(), 1, machine_code.Size(), out);
-    // fclose(fasm);
-    // fclose(out);
-    // delete[] programm_name;
-}
-
-const char* ProgrammName(List<DifferTree>& proga)
-{
-    const char* name = FrontFuncName(proga);
-    char* fullname = new char[strlen(name) + 5];
-    strcpy(fullname, name);
-    strcat(fullname, ".asm");
-    return fullname;
-}
-
-const char* FrontFuncName(List<DifferTree>& proga)
-{
-    DifferTree main_function = proga.ShowFront();
-    node_t function = main_function.Root()->GetRight();
-    return function.Name();
-}
-
-void WritePreamble(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
-{
-    fputs("global _start\n", fasm);
-    fputs("extern dtoa, atod, pow\n\n", fasm);
-    PreambleData(fasm, proga, machine_code);
-    PreambleRodata(fasm, proga, machine_code);
-    fputs("section .text\n", fasm);
-}
-
-void PreambleRodata(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
-{
-    fputs("section .rodata\n", fasm);
-
-    uint64_t rodata_begin = machine_code.Size();
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.rodataStubs().p_offset = rodata_begin;
-        machine_code.rodataStubs().p_vaddp  = machine_code.e_point() + rodata_begin;
-    }
-
-    WriteConstant(fasm, DataType::CONSTANT, proga, machine_code);
-    WriteConstant(fasm, DataType::CONST_STR, proga, machine_code);
-
-
-    uint16_t rodata_end = machine_code.Size();
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.rodataStubs().p_size = rodata_end - rodata_begin;
-    }
-}
-
-void PreambleData(FILE* fasm, List<DifferTree>& proga, ByteArray& machine_code)
-{
-    fputs("section .data\n", fasm);
-
-    if (machine_code.stubsNotLoaded())
-    {
-        machine_code.dataStubs().p_offset = machine_code.Size();
-        machine_code.dataStubs().p_vaddp = machine_code.e_point() + machine_code.Size();
-        machine_code.dataStubs().p_size = sizeof(double);
-    }
-
-    fputs("buffer: dq 0.0\n", fasm);
-    machine_code.Append(0.0);
-
-    fputs("str: times 32 db 0\n", fasm);
-    machine_code.Append(0U);
-    machine_code.Append(0U);
-    machine_code.Append(0U);
-    machine_code.Append(0U);
-}
-
-void WriteConstant(FILE* fasm, DataType::dataType mode, List<DifferTree>& proga, ByteArray& machine_code)
-{       
-    for (auto it = proga.begin(); it != proga.end(); ++it)
-    {
-        SearchConst(fasm, mode, it->Root(), machine_code);
-    }
-}
-
-void SearchConst(FILE* fasm, DataType::dataType mode, node_t* node, ByteArray& machine_code)
-{
-    if (node->GetLeft()) SearchConst(fasm, mode, node->GetLeft(), machine_code);
-    if (node->dType() == mode)
-    {
-        auto AppendData = AppendConst;
-        switch (mode)
-        {
-        case DataType::CONST_STR:
-            AppendData = AppendStr;
-            break;
-        case DataType::CONSTANT:
-            AppendData = AppendConst;
-            break;
-        default:
-            fprintf(stderr, "Incorrect Searching mode");
-            exit(EXIT_FAILURE);
-            break;
-        }
-        AppendData(fasm, node, machine_code);
-    }
-    if (node->GetRight()) SearchConst(fasm, mode, node->GetRight(), machine_code);
-}
-
-void AppendConst(FILE* fasm, node_t* node, ByteArray& machine_code)
-{    
-    static int num_const = 0;
-    if (machine_code.resetConstDeclCounter())
-    {
-        num_const = 0;
-    }
-
-    double number = node->Num();
-    std::string lbl_number = "const_" + std::to_string(num_const);
-
-    fprintf(fasm, "%s: dq %lf\n", lbl_number.c_str(), number);
-
-    machine_code.AddLabel(lbl_number);
-    machine_code.Append(number);
-
-    num_const++;
-}
-
-void AppendStr(FILE* fasm, node_t* node, ByteArray& machine_code)
-{
-    static int num_const = 0;
-    if (machine_code.resetStrDeclCounter())
-    {
-        num_const = 0;
-    }
-
-    const char* str = node->Name();
-    std::string str_mark = "str_" + std::to_string(num_const);
-
-    fprintf(fasm, "%s: db '", str_mark.c_str());
-    fputs(str, fasm);
-    fputs("'\n", fasm);
-
-    uint32_t str_len = strlen(str);
-
-    machine_code.AddLabel(str_mark);
-    machine_code.Append(str_len);
-    machine_code.Append(str, str_len);
-
-    num_const++;
-}
+#include <boost/program_options.hpp>
+#include <boost/filesystem.hpp>
+#include <filesystem>
 
 void DeclareStdlib(IRGenerator& gen) {
     auto* voidType = llvm::Type::getVoidTy(gen.context);
@@ -201,11 +34,50 @@ void DeclareStdlib(IRGenerator& gen) {
     llvm::Function::Create(simPutPixelType, llvm::Function::ExternalLinkage, "simPutPixel", gen.module);
 }
 
-void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine_code)
+std::string change_extension(const std::string& filename, const std::string& new_ext) {
+    boost::filesystem::path path(filename);
+    path.replace_extension(new_ext);
+    return path.string();
+}
+
+std::string GetOutputFileName(const po::variables_map& vm) {
+    std::string output_file;
+    if (vm.count("output")) {
+        output_file = vm["output"].as<std::string>();
+    } else {
+        output_file = change_extension(vm["input-file"].as<std::string>(), ".ll");
+    }
+    return output_file;
+}
+
+std::string GetStdLibPath(const po::variables_map& vm) {
+    std::string stdlib;
+    if (vm.count("library-path")) {
+        stdlib = vm["library-path"].as<std::string>();
+    } else {
+        stdlib = "sdl.c";
+    }
+    return stdlib;
+}
+
+std::string base_path(const std::string& path) {
+    std::filesystem::path filepath = path;
+    std::string filename = filepath.filename().string();
+    return filename;
+}
+
+void run_cmd(const std::string& cmd) {
+    if (system(cmd.c_str()) != 0) {
+        assert(system("pwd") == 0);
+        std::cout << "Error during '" << cmd << "'\n";
+        exit(0);
+    }
+}
+
+void TranslateProcessing(List<DifferTree> proga, const po::variables_map& vm)
 {
     const std::vector<node_t*>& functions = CreateLstFuncNode(proga);
     
-
     IRGenerator generator;
     DeclareStdlib(generator);
 
@@ -217,7 +89,33 @@ void TranslateProcessing(FILE* fasm, List<DifferTree> proga,  ByteArray& machine
         proga.PopFront();
     }
 
-    generator.dump();
+    auto input_file  = vm["input-file"].as<std::string>();
+    auto output_file = GetOutputFileName(vm);
+    auto stdlib_file = GetStdLibPath(vm);
+    auto ir_dump_file = output_file;
+
+    if(!vm.count("S")) {
+        ir_dump_file = change_extension(ir_dump_file, ".ll");
+    }
+
+    generator.dump(ir_dump_file);
+    
+    if (!vm.count("S")) {
+        auto compile_this_file = "clang -c " + ir_dump_file;
+        run_cmd(compile_this_file);
+
+        auto compile_stdlib = "clang -c " + stdlib_file + " $(sdl2-config --cflags --libs)";
+        run_cmd(compile_stdlib);
+
+        auto link_stdlib = "clang -o " + change_extension(output_file, ".out") + " "
+                                       + change_extension(base_path(input_file), ".o") +  " " 
+                                       + change_extension(base_path(stdlib_file), ".o") + " "
+                                       + "$(sdl2-config --cflags --libs)";
+        run_cmd(link_stdlib);
+        run_cmd("rm " + change_extension(base_path(input_file), ".o"));
+        run_cmd("rm " + change_extension(base_path(stdlib_file), ".o"));
+        run_cmd("rm " + change_extension(base_path(input_file), ".ll"));
+    }
 }
 
 std::vector<node_t*> CreateLstFuncNode(List<DifferTree>& proga)
@@ -232,24 +130,6 @@ std::vector<node_t*> CreateLstFuncNode(List<DifferTree>& proga)
     return lst;
 }
 
-void WriteProgrammProlog(FILE* fasm, List<DifferTree>& tree, ByteArray& machine_code)
-{   
-    const char* programm_name = FrontFuncName(tree);
-    
-    fprintf(fasm, "_start:\n");
-    fprintf(fasm, "\t\tfinit\n");
-    fprintf(fasm, "\t\tcall\t%s\n", programm_name);
-
-    fprintf(fasm, "\t\tmov\t\trax, 60\n");
-    fprintf(fasm, "\t\txor\t\trdi, rdi\n");
-    fprintf(fasm, "\t\tsyscall\n");
-
-    machine_code.AppendCmd(CMD::FINIT, 3);
-    machine_code.AppendCallFunc(programm_name);
-    machine_code.AppendCmd(CMD::MOV_RAX_60, 7);
-    machine_code.AppendCmd(CMD::XOR_RDI_RDI, 3);
-    machine_code.AppendCmd(CMD::SYSCALL, 2);
-}
 
 void VerifyDefFunc(node_t* function)
 {

@@ -2,58 +2,45 @@
 #include "termcolor/termcolor.hpp"
 #include <iostream>
 
+
 int main(int argc, char const *argv[])
 {    
-    VerifyMainArgument(argc, argv);
-
-    const char* filename_code = argv[1];
-    const char* filename_text = argv[2];
-
-    List<node_t> lst = ListScan(filename_text);
-	// lst.GraphDump();
-
+    auto arguments = GetArguments(argc, argv);
+    auto input_file = arguments["input-file"].as<std::string>();
+    List<node_t> lst = ListScan(input_file.c_str());
 	List<DifferTree> tree = GetGrammar(lst);
-    ProgrammDump(tree);
-    // return 0;
-
-    TranslateToAsm(tree, filename_code);
-
-    auto cmd = std::string("chmod +x ") + argv[1];
-    system(cmd.c_str());
+    TranslateProcessing(tree, arguments);
 }
 
-void VerifyMainArgument(int argc, const char* argv[])
+po::variables_map GetArguments(int argc, const char* argv[])
 {
-	switch (argc)
-    {
-    case 1:
-        puts("file for compillig not detected");
-        exit(EXIT_SUCCESS);
-    case 2:
-        puts("you have to enter 2 arguments");
-        exit(EXIT_SUCCESS);
-    case 3: 
-        return;
-    default:
-        puts("compiliter can compillite only one file");
-        exit(EXIT_SUCCESS);
-    }
-    if (strcmp(argv[0], argv[1]) == 0)
-    {
-        puts("you can't name a out file with a compiler name");
-        exit(EXIT_SUCCESS);
-    }
-}
+    po::options_description desc("Compiler options");
+    desc.add_options()
+        ("help,h", "Show help message")
+        ("S,S", "Compile only. Do not assemble or link.")
+        ("output,o", po::value<std::string>(), "Output file")
+        ("input-file", po::value<std::string>(), "Input file for compilation");
+        ("library-path,L", po::value<std::string>(), "Add standsrt library search path");
 
-void ProgrammDump(List<DifferTree> tree)
-{
-    for (auto it = tree.begin(); it != tree.end(); ++it)
-    {
-        const char* funcname = it->Root()->GetRight()->Name();
-        it->GraphDump(funcname);
-    }
-}
+    po::positional_options_description p;
+    p.add("input-file", 1);
 
+    po::variables_map vm;
+    po::store(po::command_line_parser(argc, argv).options(desc).positional(p).run(), vm);
+    po::notify(vm);
+
+    if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        exit(0);
+    }
+
+    if (!vm.count("input-file")) {
+        std::cerr << "Input file is required!" << std::endl;
+        exit(0);
+    }
+
+    return vm;
+}
 
 size_t Filesize(FILE *stream)  
 {
